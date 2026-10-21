@@ -1,0 +1,198 @@
+'use client';
+
+import { useState, Suspense } from 'react';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { usarAutenticacao } from '@/contextos/ContextoAutenticacao';
+import Botao from '@/componentes/ui/Botao';
+import CampoTexto from '@/componentes/ui/CampoTexto';
+import Carregando from '@/componentes/ui/Carregando';
+import CaptchaCloudflare from '@/componentes/ui/CaptchaCloudflare';
+import { criarClienteNavegador } from '@/lib/supabase/cliente';
+import { useRateLimitAuth } from '@/hooks/useRateLimitAuth';
+import { Shield, Mail, Lock, ArrowLeft, Ticket, Clock } from 'lucide-react';
+import { construirUrl } from '@/lib/dominios';
+
+function FormularioEntrarAdmin() {
+  const { entrar } = usarAutenticacao();
+  const [erro, setErro] = useState('');
+  const { bloqueado, segundosRestantes, mensagemRateLimit, aplicarStatus } = useRateLimitAuth(() => {
+    setErro('');
+  });
+  const searchParams = useSearchParams();
+  const redirecionar = searchParams.get('redirecionar') || '/';
+  const urlSitePrincipal = construirUrl('cliente', '/');
+
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
+  const [carregando, setCarregando] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const supabase = criarClienteNavegador();
+
+  async function aoSubmeter(e: React.FormEvent) {
+    e.preventDefault();
+    if (bloqueado) return;
+
+    setErro('');
+    setCarregando(true);
+
+    const resultado = await entrar(email, senha, 'admin');
+
+    if (resultado.erro) {
+      if (resultado.rateLimitData?.bloqueado || resultado.bloqueado) {
+        aplicarStatus(
+          resultado.rateLimitData || {
+            bloqueado: true,
+            segundosRestantes: resultado.segundosRestantes,
+            mensagem: resultado.erro,
+          }
+        );
+        setErro('');
+      } else {
+        setErro(resultado.erro);
+      }
+      setCarregando(false);
+      return;
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (user) {
+      const { data: perfil } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (!perfil || perfil.role !== 'admin') {
+        setErro('Acesso negado. Apenas administradores do sistema.');
+        await supabase.auth.signOut();
+        setCarregando(false);
+        return;
+      }
+    }
+
+    window.location.href = redirecionar;
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-3 sm:p-6 relative overflow-hidden bg-[#fafafa]">
+      {/* Background soft ambient accents */}
+      <div className="w-96 h-96 rounded-full bg-[#c59941]/5 blur-3xl absolute -top-20 -left-20 pointer-events-none" />
+      <div className="w-96 h-96 rounded-full bg-[#121826]/5 blur-3xl absolute bottom-10 right-0 pointer-events-none" />
+
+      <div className="w-full max-w-md relative z-10">
+        <a
+          href={urlSitePrincipal}
+          className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 transition-all uppercase tracking-wider mb-4 sm:mb-6 bg-white hover:bg-slate-50 px-3.5 py-2 rounded-full border border-slate-200 shadow-sm"
+        >
+          <ArrowLeft size={14} />
+          Voltar ao site principal
+        </a>
+
+        <div className="bg-white rounded-3xl p-5 sm:p-8 shadow-xl animar-entrar-baixo border border-slate-200/80">
+          <div className="flex items-center gap-3.5 mb-6 sm:mb-8 pb-5 border-b border-slate-100">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#c59941] via-[#d4a84e] to-[#9a7228] flex items-center justify-center shadow-md shadow-[#c59941]/20 shrink-0">
+              <Shield className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#c59941]/10 text-[#9a7228] text-[10px] font-bold tracking-wider uppercase mb-1 border border-[#c59941]/25">
+                <Shield size={12} /> Acesso Restrito
+              </div>
+              <h1 className="text-xl font-bold font-titulo text-slate-900">
+                Portal do Administrador
+              </h1>
+            </div>
+          </div>
+
+          <form onSubmit={aoSubmeter} className="space-y-4 sm:space-y-5">
+            <CampoTexto
+              rotulo="Email administrativo"
+              type="email"
+              placeholder="admin@meuingrss.com.br"
+              value={email}
+              onChange={(e) => setEmail((e.target as HTMLInputElement).value)}
+              icone={<Mail size={18} />}
+              required
+            />
+
+            <CampoTexto
+              rotulo="Chave de Acesso / Senha"
+              type="password"
+              placeholder="••••••••••••"
+              value={senha}
+              onChange={(e) => setSenha((e.target as HTMLInputElement).value)}
+              icone={<Lock size={18} />}
+              required
+            />
+
+            <div className="flex justify-end -mt-1 sm:-mt-2">
+              <Link
+                href="/autenticacao/recuperar-senha"
+                className="text-xs font-semibold text-[#9a7228] hover:text-[#c59941] hover:underline transition-colors"
+              >
+                Esqueci minha senha
+              </Link>
+            </div>
+
+            {bloqueado && (
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-red-50 border border-red-200 text-xs font-semibold text-red-700 flex items-start gap-3 animar-entrar-baixo">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-red-100 flex items-center justify-center shrink-0 text-red-600 font-bold mt-0.5">
+                  <Clock size={16} className="animate-spin" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-xs sm:text-sm text-red-800">Bloqueado Temporariamente</p>
+                  <p className="mt-1 leading-relaxed text-slate-600">
+                    {mensagemRateLimit || 'Muitas tentativas incorretas em sequência.'}
+                  </p>
+                  <div className="mt-2 text-xs font-mono font-bold text-red-700 flex items-center gap-1.5 flex-wrap">
+                    Tente novamente em: <span className="bg-red-100 px-2 py-0.5 rounded border border-red-300 text-red-800 text-sm font-bold">{segundosRestantes}s</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {erro && !bloqueado && (
+              <div className="p-3.5 sm:p-4 rounded-xl bg-red-50 border border-red-200 text-xs font-semibold text-red-700 leading-relaxed flex items-center gap-2.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping shrink-0" />
+                <span>{erro}</span>
+              </div>
+            )}
+
+            <Botao
+              type="submit"
+              variante="primario"
+              larguraTotal
+              tamanho="lg"
+              carregando={carregando}
+              disabled={bloqueado || carregando || !turnstileToken}
+            >
+              {bloqueado ? `Aguarde ${segundosRestantes}s` : 'Acessar Painel Global'}
+            </Botao>
+
+            <CaptchaCloudflare
+              onVerify={(token) => setTurnstileToken(token)}
+              onExpire={() => setTurnstileToken('')}
+              onError={() => setTurnstileToken('')}
+            />
+          </form>
+
+          <div className="mt-6 sm:mt-8 pt-5 sm:pt-6 border-t border-slate-100 text-center">
+            <p className="text-[11px] text-slate-500 flex items-center justify-center gap-1.5">
+              <Shield size={12} className="text-[#9a7228] shrink-0" />
+              <span>Sessão protegida por log de auditoria global.</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function PaginaEntrarAdmin() {
+  return (
+    <Suspense fallback={<Carregando telaCheia texto="Carregando portal do administrador..." />}>
+      <FormularioEntrarAdmin />
+    </Suspense>
+  );
+}

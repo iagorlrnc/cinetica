@@ -1,0 +1,390 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import Botao from '@/componentes/ui/Botao';
+import EstadoVazio from '@/componentes/ui/EstadoVazio';
+import CampoTexto from '@/componentes/ui/CampoTexto';
+import Carregando from '@/componentes/ui/Carregando';
+import { criarClienteNavegador } from '@/lib/supabase/cliente';
+import { useNotificacao } from '@/componentes/ui/Notificacao';
+import { formatarDataCurta, formatarHora, obterIniciais } from '@/lib/utilitarios';
+import type { Perfil, Atletica } from '@/tipos';
+import {
+  Check,
+  X,
+  Trophy,
+  User,
+  Mail,
+  Phone,
+  Clock,
+  Search,
+  ClipboardList,
+  CheckCircle2,
+  MapPin,
+} from 'lucide-react';
+
+interface SolicitacaoItem {
+  perfil: Perfil;
+  atletica: Atletica | null;
+}
+
+export default function PaginaSolicitacoesAdmin() {
+  const [solicitacoes, setSolicitacoes] = useState<SolicitacaoItem[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [busca, setBusca] = useState('');
+  const [processandoId, setProcessandoId] = useState<string | null>(null);
+
+  const supabase = criarClienteNavegador();
+  const { sucesso, erro } = useNotificacao();
+
+  async function buscarSolicitacoes() {
+    setCarregando(true);
+
+    try {
+      // 1. Busca perfis com status 'pendente' ou vinculados a cadastro pendente
+      const { data: perfis, error: errPerfis } = await supabase
+        .from('profiles')
+        .select('*, atletica:atleticas(*)')
+        .eq('status', 'pendente')
+        .order('criado_em', { ascending: false });
+
+      if (errPerfis) {
+        console.error('Erro ao buscar solicitações de perfis:', errPerfis);
+      }
+
+      // 2. Busca perfis cujas atléticas vinculadas estejam pendentes
+      const { data: perfisAtlPendente } = await supabase
+        .from('profiles')
+        .select('*, atletica:atleticas!inner(*)')
+        .eq('atletica.status', 'pendente')
+        .order('criado_em', { ascending: false });
+
+      const mapaItens = new Map<string, SolicitacaoItem>();
+
+      // Inclui apenas se a solicitação (perfil ou atlética) estiver pendente de aprovação
+      (perfis || []).forEach((p: any) => {
+        if (p.status === 'pendente' || p.atletica?.status === 'pendente') {
+          mapaItens.set(p.id, { perfil: p, atletica: p.atletica || null });
+        }
+      });
+
+      (perfisAtlPendente || []).forEach((p: any) => {
+        if (p.status === 'pendente' || p.atletica?.status === 'pendente') {
+          if (!mapaItens.has(p.id)) {
+            mapaItens.set(p.id, { perfil: p, atletica: p.atletica || null });
+          }
+        }
+      });
+
+      // 3. Se houver perfil pendente sem atletica vinculada no objeto, busca se existe atletica pendente no banco para vincular
+      const { data: atleticasPendentes } = await supabase
+        .from('atleticas')
+        .select('*')
+        .eq('status', 'pendente');
+
+      if (atleticasPendentes && atleticasPendentes.length > 0) {
+        mapaItens.forEach((item) => {
+          if (!item.atletica && atleticasPendentes[0]) {
+            item.atletica = atleticasPendentes[0];
+          }
+        });
+      }
+
+      setSolicitacoes(Array.from(mapaItens.values()));
+    } catch (err) {
+      console.error('Exceção ao buscar solicitações:', err);
+      setSolicitacoes([]);
+    } finally {
+      setCarregando(false);
+    }
+  }
+
+  useEffect(() => {
+    buscarSolicitacoes();
+  }, []);
+
+
+  async function aprovarSolicitacao(perfilId: string, atleticaId: string | null) {
+    setProcessandoId(perfilId);
+
+    try {
+      // 1. Tenta aprovar via RPC em banco (com SECURITY DEFINER para ultrapassar políticas de RLS e triggers estritos)
+      const { data: resRpc, error: errRpc } = await supabase.rpc('aprovar_diretor_e_atletica', {
+        p_perfil_id: perfilId,
+        p_atletica_id: atleticaId || null,
+      });
+
+      const resObj = resRpc as { sucesso?: boolean; erro?: string; mensagem?: string } | null;
+
+      if (!errRpc && resObj?.sucesso) {
+        sucesso(
+          'Solicitação Aprovada!',
+          'A Atlética e o Diretor foram ativados com sucesso e vinculados ao sistema.'
+        );
+        buscarSolicitacoes();
+        return;
+      }
+
+      // 2. Fallback via tabelas diretas caso a RPC ainda não esteja instalada no Supabase
+      let idAtleticaEfetiva = atleticaId;
+
+      // Se idAtleticaEfetiva for nulo, tenta resgatar uma atlética pendente existente no banco antes de criar
+      if (!idAtleticaEfetiva) {
+        const { data: atlPendente } = await supabase
+          .from('atleticas')
+          .select('id')
+          .eq('status', 'pendente')
+          .order('criado_em', { ascending: false })
+          .maybeSingle();
+
+        if (atlPendente) {
+          idAtleticaEfetiva = atlPendente.id;
+        }
+      }
+
+      if (idAtleticaEfetiva) {
+        await supabase
+          .from('atleticas')
+          .update({ status: 'ativa' })
+          .eq('id', idAtleticaEfetiva);
+      }
+
+      const { error: errPerfil } = await supabase
+        .from('profiles')
+        .update({
+          status: 'ativo',
+          role: 'diretor',
+          ...(idAtleticaEfetiva ? { atletica_id: idAtleticaEfetiva } : {}),
+        })
+        .eq('id', perfilId);
+
+      if (errPerfil) {
+        console.error('Erro ao aprovar perfil:', errPerfil);
+        erro(
+          'Erro ao Aprovar',
+          `Não foi possível aprovar a solicitação: ${errPerfil.message || 'Verifique as permissões RLS no Supabase.'}`
+        );
+      } else {
+        sucesso(
+          'Solicitação Aprovada!',
+          'A Atlética e o Diretor foram ativados com sucesso e vinculados ao sistema.'
+        );
+        buscarSolicitacoes();
+      }
+    } catch (errCatch) {
+      console.error('Exceção ao aprovar solicitação:', errCatch);
+      erro('Erro ao Aprovar', 'Ocorreu uma exceção ao processar a aprovação.');
+    } finally {
+      setProcessandoId(null);
+    }
+  }
+
+  async function rejeitarSolicitacao(perfilId: string, atleticaId: string | null) {
+    setProcessandoId(perfilId);
+
+    try {
+      // 1. Tenta rejeitar via RPC em banco
+      const { data: resRpc, error: errRpc } = await supabase.rpc('rejeitar_diretor_e_atletica', {
+        p_perfil_id: perfilId,
+        p_atletica_id: atleticaId || null,
+      });
+
+      const resObj = resRpc as { sucesso?: boolean; erro?: string; mensagem?: string } | null;
+
+      if (!errRpc && resObj?.sucesso) {
+        sucesso('Solicitação Recusada', 'A solicitação de cadastro foi recusada com sucesso.');
+        buscarSolicitacoes();
+        return;
+      }
+
+      // 2. Fallback direto nas tabelas
+      if (atleticaId) {
+        await supabase
+          .from('atleticas')
+          .update({ status: 'inativa' })
+          .eq('id', atleticaId);
+      }
+
+      const { error: errPerfil } = await supabase
+        .from('profiles')
+        .update({ status: 'bloqueado' })
+        .eq('id', perfilId);
+
+      if (errPerfil) {
+        erro('Erro ao Rejeitar', `Não foi possível rejeitar a solicitação: ${errPerfil.message || 'Verifique as permissões.'}`);
+      } else {
+        sucesso('Solicitação Recusada', 'A solicitação de cadastro foi recusada com sucesso.');
+        buscarSolicitacoes();
+      }
+    } catch (errCatch) {
+      console.error('Exceção ao recusar solicitação:', errCatch);
+      erro('Erro ao Rejeitar', 'Ocorreu uma exceção ao processar a rejeição.');
+    } finally {
+      setProcessandoId(null);
+    }
+  }
+
+  const filtrados = solicitacoes.filter((s) => {
+    const termo = busca.toLowerCase();
+    return (
+      s.perfil.nome?.toLowerCase().includes(termo) ||
+      s.perfil.email.toLowerCase().includes(termo) ||
+      s.atletica?.nome?.toLowerCase().includes(termo) ||
+      s.atletica?.cidade?.toLowerCase().includes(termo)
+    );
+  });
+
+
+
+  return (
+    <div className="space-y-6">
+      {/* Cabeçalho */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#c59941]/10 text-[#9a7228] border border-[#c59941]/30 text-xs font-bold uppercase tracking-wider mb-2">
+            <ClipboardList size={14} /> Credenciamento & Pedidos
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black font-titulo text-slate-900">
+            Solicitações de <span className="text-[#c59941]">Cadastro</span>
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            Aprovação de novos Diretores e Atléticas pendentes no sistema.
+          </p>
+        </div>
+
+        <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#c59941]/10 border border-[#c59941]/25 text-[#9a7228] text-sm font-bold shadow-sm">
+          <Clock size={16} />
+          {solicitacoes.length} solicitação(ões) pendente(s)
+        </span>
+      </div>
+
+      {/* Campo de Busca */}
+      <div className="max-w-md">
+        <CampoTexto
+          placeholder="Buscar por diretor, email ou atlética..."
+          value={busca}
+          onChange={(e) => setBusca((e.target as HTMLInputElement).value)}
+          icone={<Search size={18} />}
+        />
+      </div>
+
+      {/* Grid de Solicitações */}
+      {filtrados.length > 0 ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {filtrados.map(({ perfil, atletica }) => (
+            <div
+              key={perfil.id}
+              className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-5 relative overflow-hidden hover:border-[#c59941]/50 transition-all"
+            >
+              {/* Top Banner / Status */}
+              <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#c59941] to-[#e5b558] flex items-center justify-center text-white font-black text-sm shadow-sm">
+                    {obterIniciais(perfil.nome || 'D')}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-base leading-snug">
+                      {perfil.nome || 'Diretor sem Nome'}
+                    </h3>
+                    <p className="text-xs text-slate-500 flex items-center gap-1">
+                      <Mail size={12} className="text-[#c59941]" /> {perfil.email}
+                    </p>
+                  </div>
+                </div>
+
+                <span className="px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+                  Pendente
+                </span>
+              </div>
+
+              {/* Informações em 2 colunas */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                {/* Coluna 1: Dados do Diretor */}
+                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
+                  <h4 className="font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5 text-[11px]">
+                    <User size={14} className="text-[#9a7228]" /> Dados Pessoais
+                  </h4>
+                  {perfil.telefone && (
+                    <p className="text-slate-600 flex items-center gap-1.5">
+                      <Phone size={13} className="text-slate-400 shrink-0" />
+                      <span>{perfil.telefone}</span>
+                    </p>
+                  )}
+                  <p className="text-slate-600 flex items-center gap-1.5">
+                    <Clock size={13} className="text-slate-400 shrink-0" />
+                    <span>Cadastrado em {formatarDataCurta(perfil.criado_em)}</span>
+                  </p>
+                  {perfil.criado_em && (
+                    <p className="text-[#9a7228] text-[11px] font-mono pl-5 -mt-1">
+                      às {formatarHora(perfil.criado_em)}h
+                    </p>
+                  )}
+                </div>
+
+                {/* Coluna 2: Dados da Atlética */}
+                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
+                  <h4 className="font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5 text-[11px]">
+                    <Trophy size={14} className="text-[#9a7228]" /> Dados da Atlética
+                  </h4>
+                  {atletica ? (
+                    <>
+                      <p className="font-bold text-slate-900 text-sm">{atletica.nome}</p>
+                      {atletica.faculdade && (
+                        <p className="text-slate-600 flex items-center gap-1.5">
+                          <Trophy size={13} className="text-slate-400 shrink-0" />
+                          <span>{atletica.faculdade}</span>
+                        </p>
+                      )}
+                      {atletica.cidade && (
+                        <p className="text-slate-600 flex items-center gap-1.5">
+                          <MapPin size={13} className="text-slate-400 shrink-0" />
+                          <span>{atletica.cidade}</span>
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-slate-500 italic">Nenhuma atlética associada</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Botões de Ação */}
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                <Botao
+                  variante="perigo"
+                  tamanho="sm"
+                  onClick={() => rejeitarSolicitacao(perfil.id, atletica?.id || null)}
+                  carregando={processandoId === perfil.id}
+                  icone={<X size={16} />}
+                >
+                  Recusar
+                </Botao>
+
+                <Botao
+                  variante="sucesso"
+                  tamanho="sm"
+                  onClick={() => aprovarSolicitacao(perfil.id, atletica?.id || null)}
+                  carregando={processandoId === perfil.id}
+                  icone={<Check size={16} />}
+                >
+                  Aprovar Atlética & Diretor
+                </Botao>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <EstadoVazio
+          titulo="Nenhuma solicitação pendente no momento"
+          descricao={
+            busca
+              ? `Nenhuma solicitação corresponde aos termos da pesquisa "${busca}".`
+              : 'Não há diretores ou atléticas aguardando aprovação no sistema.'
+          }
+          icone={<CheckCircle2 className="w-8 h-8 text-emerald-400" />}
+        />
+      )}
+    </div>
+  );
+}
