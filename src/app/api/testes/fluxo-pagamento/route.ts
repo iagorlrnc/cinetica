@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { criarClienteAdmin } from '@/lib/supabase/admin';
 import { gerarHashIngresso } from '@/lib/gerarQrCode';
 import { validarAssinaturaWebhook } from '@/lib/mercadopago';
+import { validarBearer } from '@/lib/seguranca';
 
 /**
  * Suite Completa de Testes de Integração e Segurança do Fluxo de Pagamentos
@@ -22,7 +23,8 @@ export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   const testSecret = process.env.TEST_SUITE_SECRET;
 
-  if (testSecret && authHeader !== `Bearer ${testSecret}`) {
+  // Segredo obrigatório mesmo em desenvolvimento (o endpoint grava dados reais)
+  if (!validarBearer(authHeader, testSecret)) {
     return NextResponse.json({ erro: 'Endpoint restrito e não autorizado' }, { status: 403 });
   }
 

@@ -171,3 +171,32 @@ export interface EstatisticasAdmin {
 export * from './loja';
 
 
+
+export type StatusSorteio = 'rascunho' | 'em_breve' | 'ativo' | 'encerrado' | 'cancelado';
+
+export interface Sorteio {
+  id: string;
+  atletica_id: string;
+  titulo: string;
+  subtitulo: string | null;
+  descricao: string;
+  premio_principal: string;
+  premios_secundarios: string[];
+  valor_cota: number;
+  total_cotas: number;
+  cotas_vendidas: number;
+  data_sorteio: string;
+  status: StatusSorteio;
+  destaque: boolean;
+  imagem_url: string | null;
+  regulamento: string | null;
+  forma_apuracao: string | null;
+  ganhador_nome: string | null;
+  ganhador_bilhete: string | null;
+  ganhador_cidade: string | null;
+  apurado_em: string | null;
+  criado_em: string;
+  atualizado_em: string;
+
+  atletica?: Pick<Atletica, 'id' | 'nome' | 'chave_pix' | 'whatsapp' | 'instagram' | 'logo_url'> | null;
+}

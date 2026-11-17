@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { obterIpRequisicao } from './seguranca';
 
 interface RegRateLimit {
   tentativasConsecutivas: number;
@@ -64,25 +65,12 @@ if (!g._rateLimitCleanupInterval) {
   }, 10 * 60 * 1000);
 }
 
+/**
+ * IP do cliente. `cf-connecting-ip` só é considerado quando CONFIAR_CF_CONNECTING_IP=true
+ * (caso contrário qualquer cliente poderia forjá-lo e escapar do rate limit).
+ */
 export function obterIPCliente(req: Request | NextRequest): string {
-  const headers = req.headers;
-
-  // Prioridade 1: Headers confiáveis da plataforma (não falsificáveis pelo cliente)
-  const cfConnectingIp = headers.get('cf-connecting-ip');
-  if (cfConnectingIp) return cfConnectingIp.trim();
-
-  // Prioridade 2: Header de IP real (Vercel, Nginx)
-  const xRealIp = headers.get('x-real-ip');
-  if (xRealIp && xRealIp !== '::1' && xRealIp !== '127.0.0.1') return xRealIp.trim();
-
-  // Prioridade 3: X-Forwarded-For (pode ser spoofado, mas é útil como fallback)
-  const xForwardedFor = headers.get('x-forwarded-for');
-  if (xForwardedFor) {
-    const ip = xForwardedFor.split(',')[0].trim();
-    if (ip && ip !== '::1' && ip !== '127.0.0.1') return ip;
-  }
-
-  return '127.0.0.1';
+  return obterIpRequisicao(req.headers);
 }
 
 export interface ResultadoRateLimit {
@@ -383,4 +371,45 @@ export function registrarEnvioEmailRecuperacao(email: string): ResultadoRateLimi
     tentativasConsecutivas: dado.tentativas,
     mensagem: `E-mail de recuperação registrado com sucesso. Próximo envio permitido em ${segundosRestantes}s.`,
   };
+}
+
+/**
+ * Rate limit distribuído (compartilhado entre instâncias serverless) via RPC
+ * `registrar_rate_limit` no Postgres (migração 033). Se o banco estiver
+ * indisponível, cai para o limitador em memória — nunca bloqueia por falha de infra.
+ */
+export async function limitarRequisicao(
+  chave: string,
+  opcoes: { janelaMs: number; maxRequisicoes: number }
+): Promise<ResultadoRateLimit> {
+  const local = verificarRateLimit(chave, opcoes);
+  if (!local.permitido) return local;
+
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY || !process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    return local;
+  }
+
+  try {
+    const { criarClienteAdmin } = await import('./supabase/admin');
+    const admin = criarClienteAdmin();
+    const { data, error } = await admin.rpc('registrar_rate_limit', {
+      p_chave: chave,
+      p_janela_segundos: Math.max(1, Math.ceil(opcoes.janelaMs / 1000)),
+      p_max: opcoes.maxRequisicoes,
+    });
+    if (error || !data) return local;
+    const res = data as { permitido: boolean; contagem: number; segundos_restantes: number };
+    if (!res.permitido) {
+      return {
+        permitido: false,
+        bloqueado: true,
+        segundosRestantes: res.segundos_restantes,
+        tentativasConsecutivas: res.contagem,
+        mensagem: `Muitas solicitações em curto intervalo. Aguarde ${res.segundos_restantes} segundo(s).`,
+      };
+    }
+    return { ...local, tentativasConsecutivas: res.contagem };
+  } catch {
+    return local;
+  }
 }

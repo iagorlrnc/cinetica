@@ -168,9 +168,12 @@ export default function PaginaProdutosDiretor() {
     setUploadingImage(true);
 
     try {
-      const ext = file.name.split('.').pop() || 'png';
-      const randomSuffix = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID().slice(0, 8) : Date.now().toString(36);
-      const nomeArquivo = `produto_${Date.now()}_${randomSuffix}.${ext}`;
+      const tiposPermitidos: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' };
+      const ext = tiposPermitidos[file.type];
+      if (!ext || file.size > 10 * 1024 * 1024) {
+        throw new Error('Envie uma imagem JPG, PNG, WEBP ou GIF de até 10MB.');
+      }
+      const nomeArquivo = `produto_${crypto.randomUUID()}.${ext}`;
 
       // 1. Tenta upload no bucket oficial 'imagens'
       let bucketEscolhido = 'imagens';

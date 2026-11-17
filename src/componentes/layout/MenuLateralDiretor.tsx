@@ -17,6 +17,7 @@ import {
   X,
   ShoppingCart,
   BarChart3,
+  Gift,
 } from 'lucide-react';
 import { useState } from 'react';
 import Logo from '@/componentes/ui/Logo';
@@ -28,6 +29,7 @@ const itensMenu = [
   { href: '/eventos', icone: CalendarDays, rotulo: 'Meus Eventos' },
   { href: '/produtos', icone: ShoppingCart, rotulo: 'Produtos' },
   { href: '/metricas-loja', icone: BarChart3, rotulo: 'Métricas da Loja' },
+  { href: '/sorteios', icone: Gift, rotulo: 'Sorteios' },
   { href: '/validar-entrada', icone: ScanLine, rotulo: 'Validar Entrada' },
 ];
 

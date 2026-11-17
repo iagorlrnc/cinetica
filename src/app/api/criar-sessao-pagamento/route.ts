@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 
 /**
@@ -9,10 +9,9 @@ import { logger } from '@/lib/logger';
  * - Pagamento Cartão: /api/payments/card
  * - Ingressos Gratuitos: /api/payments/gratuito
  */
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
-    const body = await request.json().catch(() => ({}));
-    logger.warn('Chamada a endpoint descontinuado /api/criar-sessao-pagamento detectada', { body });
+    logger.warn('Chamada a endpoint descontinuado /api/criar-sessao-pagamento detectada');
 
     return NextResponse.json(
       {

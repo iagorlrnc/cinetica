@@ -158,7 +158,7 @@ export default function PaginaMetricasLoja() {
   }
 
   // Filtragem dos pedidos com busca textual
-  const agora = Date.now();
+  const [agora] = useState(() => Date.now());
   const pedidosFiltrados = useMemo(() => {
     return pedidos.filter((ped) => {
       const dataPed = new Date(ped.created_at).getTime();

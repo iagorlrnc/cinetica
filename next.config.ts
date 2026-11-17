@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  poweredByHeader: false,
   experimental: {
     optimizePackageImports: ['lucide-react'],
   },
@@ -31,12 +32,16 @@ const nextConfig: NextConfig = {
             value: 'DENY',
           },
           {
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin-allow-popups',
+          },
+          {
             key: 'X-Content-Type-Options',
             value: 'nosniff',
           },
           {
             key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin',
+            value: 'strict-origin-when-cross-origin',
           },
           {
             key: 'Permissions-Policy',
@@ -58,7 +63,18 @@ const nextConfig: NextConfig = {
               "frame-ancestors 'none'",
             ].join('; '),
           },
-
+          {
+            key: 'X-Permitted-Cross-Domain-Policies',
+            value: 'none',
+          },
+        ],
+      },
+      {
+        // Respostas de API carregam dados pessoais/financeiros: nunca cachear em proxies/CDN
+        source: '/api/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'no-store, max-age=0' },
+          { key: 'X-Robots-Tag', value: 'noindex' },
         ],
       },
     ];

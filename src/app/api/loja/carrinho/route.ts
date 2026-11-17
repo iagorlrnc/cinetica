@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { criarClienteServidor } from '@/lib/supabase/servidor';
 import { criarClienteAdmin } from '@/lib/supabase/admin';
 import { logger } from '@/lib/logger';
+import { ehUuid } from '@/lib/seguranca';
+
+const MAX_UNIDADES_ITEM = 20;
+const MAX_ITENS_SYNC = 30;
 
 export async function GET() {
   try {
@@ -135,17 +139,22 @@ export async function POST(request: NextRequest) {
 
     // 2. Se for uma sincronização em lote (ex: ao fazer login vindo do localStorage)
     if (Array.isArray(sync_items) && sync_items.length > 0) {
+      if (sync_items.length > MAX_ITENS_SYNC) {
+        return NextResponse.json({ erro: `Limite de ${MAX_ITENS_SYNC} itens por sincronização.` }, { status: 400 });
+      }
       for (const item of sync_items) {
-        if (!item.product_id) continue;
+        if (!ehUuid(item?.product_id)) continue;
 
         const { data: prod } = await admin
           .from('store_products')
-          .select('price, stock_quantity, is_active')
+          .select('price, stock_quantity, is_active, sizes')
           .eq('id', item.product_id)
           .single();
 
         if (prod && prod.is_active && prod.stock_quantity > 0) {
-          const qtdFinal = prod.price === 0 ? 1 : Math.min(Math.max(1, Number(item.quantity) || 1), prod.stock_quantity);
+          const qtdFinal = prod.price === 0 ? 1 : Math.min(Math.max(1, Number(item.quantity) || 1), prod.stock_quantity, MAX_UNIDADES_ITEM);
+          const tamanhosProd = Array.isArray(prod.sizes) ? (prod.sizes as string[]) : [];
+          if (tamanhosProd.length > 0 && !tamanhosProd.includes(String(item.size || "").trim())) continue;
           const sizeNorm = item.size ? String(item.size).trim() : null;
 
           // Upsert item
@@ -164,7 +173,7 @@ export async function POST(request: NextRequest) {
           const { data: itemExistente } = await queryExist.maybeSingle();
 
           if (itemExistente) {
-            const novaQtd = prod.price === 0 ? 1 : Math.min(itemExistente.quantity + qtdFinal, prod.stock_quantity);
+            const novaQtd = prod.price === 0 ? 1 : Math.min(itemExistente.quantity + qtdFinal, prod.stock_quantity, MAX_UNIDADES_ITEM);
             await admin
               .from('store_cart_items')
               .update({
@@ -188,13 +197,13 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Adição individual de produto
-    if (!product_id) {
+    if (!ehUuid(product_id)) {
       return NextResponse.json({ erro: 'ID do produto obrigatório' }, { status: 400 });
     }
 
     const { data: product, error: prodErr } = await admin
       .from('store_products')
-      .select('id, name, price, stock_quantity, is_active')
+      .select('id, name, price, stock_quantity, is_active, sizes')
       .eq('id', product_id)
       .single();
 
@@ -206,7 +215,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ erro: 'Produto sem estoque disponível' }, { status: 400 });
     }
 
-    const qtdDesejada = product.price === 0 ? 1 : Math.max(1, parseInt(String(quantity), 10) || 1);
+    const qtdDesejada = product.price === 0 ? 1 : Math.min(Math.max(1, parseInt(String(quantity), 10) || 1), MAX_UNIDADES_ITEM);
+    const tamanhosProduto = Array.isArray(product.sizes) ? (product.sizes as string[]) : [];
+    if (tamanhosProduto.length > 0 && !tamanhosProduto.includes(String(size || "").trim())) {
+      return NextResponse.json({ erro: "Selecione um tamanho válido para este produto." }, { status: 400 });
+    }
     const sizeNorm = size ? String(size).trim() : null;
 
     // Checa se o item já existe no carrinho com esse tamanho
@@ -252,7 +265,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (itemExist) {
-      const novaQtd = product.price === 0 ? 1 : Math.min(itemExist.quantity + qtdDesejada, product.stock_quantity);
+      const novaQtd = product.price === 0 ? 1 : Math.min(itemExist.quantity + qtdDesejada, product.stock_quantity, MAX_UNIDADES_ITEM);
       await admin
         .from('store_cart_items')
         .update({
@@ -290,7 +303,7 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const { item_id, quantity } = body;
 
-    if (!item_id) {
+    if (!ehUuid(item_id)) {
       return NextResponse.json({ erro: 'ID do item obrigatório' }, { status: 400 });
     }
 
@@ -327,7 +340,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const maxStock = isFree ? 1 : ((item.product as any)?.stock_quantity ?? 99);
-    const qtdFinal = Math.min(qtd, maxStock);
+    const qtdFinal = Math.min(qtd, maxStock, MAX_UNIDADES_ITEM);
 
     await admin
       .from('store_cart_items')

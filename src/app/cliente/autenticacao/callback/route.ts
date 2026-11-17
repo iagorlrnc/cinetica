@@ -1,12 +1,24 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { sanitizarRedirecionamento } from '@/lib/validacoes';
+
+/** Hosts para os quais o callback pode redirecionar (evita Host header injection). */
+function hostsPermitidos(): string[] {
+  return [
+    process.env.NEXT_PUBLIC_DOMINIO_PRINCIPAL,
+    process.env.NEXT_PUBLIC_SUBDOMINIO_DIRETORIA || process.env.NEXT_PUBLIC_SUBDOMINIO_DIRETOR,
+    process.env.NEXT_PUBLIC_SUBDOMINIO_DEV || process.env.NEXT_PUBLIC_SUBDOMINIO_ADMIN,
+  ]
+    .filter((h): h is string => Boolean(h))
+    .map((h) => h.replace(/^https?:\/\//, '').replace(/\/+$/, '').toLowerCase());
+}
 
 function obterOrigemPublica(request: Request): string {
-  const hostHeader = request.headers.get('x-forwarded-host') || request.headers.get('host');
-  const protoHeader = request.headers.get('x-forwarded-proto') || process.env.NEXT_PUBLIC_PROTOCOLO || 'https';
-  
-  if (hostHeader && !hostHeader.includes('localhost') && !hostHeader.includes('127.0.0.1')) {
+  const hostHeader = (request.headers.get('x-forwarded-host') || request.headers.get('host') || '').toLowerCase();
+  const protoHeader = process.env.NEXT_PUBLIC_PROTOCOLO || 'https';
+
+  if (hostHeader && hostsPermitidos().includes(hostHeader)) {
     return `${protoHeader}://${hostHeader}`;
   }
 
@@ -23,18 +35,10 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
   const nextParam = searchParams.get('next');
-  let redirecionar = searchParams.get('redirecionar') || nextParam || '/';
-
-  // Sanitizar URL de destino para prevenir mal-uso ou loops (preservando redefinir-senha)
-  if (
-    !redirecionar.startsWith('/') ||
-    redirecionar.startsWith('//') ||
-    redirecionar.includes('/autenticacao/entrar') ||
-    redirecionar.includes('/autenticacao/cadastro')
-  ) {
-    if (!redirecionar.includes('/autenticacao/redefinir-senha')) {
-      redirecionar = '/';
-    }
+  // Apenas caminhos relativos do próprio site (bloqueia open redirect / javascript:)
+  let redirecionar = sanitizarRedirecionamento(searchParams.get('redirecionar') || nextParam);
+  if (redirecionar.startsWith('/autenticacao/entrar') || redirecionar.startsWith('/autenticacao/cadastro')) {
+    redirecionar = '/';
   }
 
   const origemPublica = obterOrigemPublica(request);

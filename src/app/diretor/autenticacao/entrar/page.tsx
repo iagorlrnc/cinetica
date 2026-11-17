@@ -24,6 +24,7 @@ import { useRateLimitAuth } from '@/hooks/useRateLimitAuth';
 import CaptchaCloudflare from '@/componentes/ui/CaptchaCloudflare';
 
 import { construirUrl } from '@/lib/dominios';
+import { sanitizarRedirecionamento } from '@/lib/validacoes';
 import { obterIdAtleticaCinetica } from '@/lib/atleticaCinetica';
 
 function FormularioEntrarDiretor() {
@@ -34,7 +35,7 @@ function FormularioEntrarDiretor() {
   });
   const searchParams = useSearchParams();
   const router = useRouter();
-  const redirecionar = searchParams.get('redirecionar') || '/';
+  const redirecionar = sanitizarRedirecionamento(searchParams.get('redirecionar'));
   const urlSitePrincipal = construirUrl('cliente', '/');
 
   const [email, setEmail] = useState('');
@@ -149,17 +150,9 @@ function FormularioEntrarDiretor() {
         return;
       }
 
-      // Se a conta está ativa e possui atlética associada, garante que a role seja 'diretor'
-      if (perfil?.status === 'ativo' && perfil.atletica_id && perfil.role === 'cliente') {
-        await supabase
-          .from('profiles')
-          .update({ role: 'diretor' })
-          .eq('id', user.id);
-        perfil.role = 'diretor';
-      }
-
-      // Garante vínculo automático à Atlética Cinética para diretores e administradores
-      if ((perfil?.role === 'diretor' || perfil?.role === 'admin') && !perfil.atletica_id) {
+      // role / atletica_id só podem ser alterados pelo administrador (protegido por trigger no banco).
+      // Admin sem atlética vinculada é associado automaticamente à Atlética Cinética.
+      if (perfil?.role === 'admin' && !perfil.atletica_id) {
         const idCin = await obterIdAtleticaCinetica(supabase);
         if (idCin) {
           await supabase.from('profiles').update({ atletica_id: idCin }).eq('id', user.id);
@@ -167,7 +160,7 @@ function FormularioEntrarDiretor() {
         }
       }
 
-      if (!perfil || (perfil.role !== 'diretor' && perfil.role !== 'admin' && !perfil.atletica_id)) {
+      if (!perfil || perfil.status !== 'ativo' || (perfil.role !== 'diretor' && perfil.role !== 'admin')) {
         setErro('Sua conta é de cliente. O portal do diretor é restrito à Atlética Cinética.');
         await supabase.auth.signOut();
         setCarregando(false);

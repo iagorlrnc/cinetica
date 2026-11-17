@@ -1,161 +1,114 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { paymentClient, ehMercadoPagoConfigurado } from '@/lib/mercadopago';
 import { criarClienteAdmin } from '@/lib/supabase/admin';
-import { criarClienteServidor } from '@/lib/supabase/servidor';
+import { obterSessaoApi, ehAdminAtivo } from '@/lib/autenticacaoApi';
 import { logger } from '@/lib/logger';
-import { verificarRateLimit } from '@/lib/rateLimit';
+import { limitarRequisicao } from '@/lib/rateLimit';
+import { ehIdPagamentoGateway, ehUuid, obterIpRequisicao } from '@/lib/seguranca';
+import { STATUS_GATEWAY_CANCELADOS, type PagamentoGateway } from '@/lib/pagamentos/comum';
+import { confirmarPedidoLoja, type PedidoLojaBanco } from '@/lib/pagamentos/loja';
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MENSAGENS: Record<string, string> = {
+  paid: 'Pagamento confirmado com sucesso!',
+  failed: 'O pagamento foi cancelado ou recusado.',
+  cancelled: 'O pedido foi cancelado.',
+  refunded: 'O pagamento foi estornado.',
+  stock_unavailable: 'Estoque esgotado durante o processamento. O valor será estornado.',
+  pending_payment: 'Aguardando confirmação do pagamento pelo gateway...',
+};
+
+function resposta(status: string, orderId: string | null, extra: Record<string, unknown> = {}) {
+  // `status` é lido pelo checkout da loja; `status_pedido` mantido por compatibilidade
+  return NextResponse.json({ status, status_pedido: status, mensagem: MENSAGENS[status] || MENSAGENS.pending_payment, order_id: orderId, ...extra });
+}
 
 export async function GET(request: NextRequest) {
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || '127.0.0.1';
-
-  // Rate limit
-  const rateLimit = verificarRateLimit(`status_loja_pedido_${ip}`, { janelaMs: 60000, maxRequisicoes: 60 });
-  if (!rateLimit.permitido) {
+  const ip = obterIpRequisicao(request.headers);
+  const limite = await limitarRequisicao(`status_loja:${ip}`, { janelaMs: 60_000, maxRequisicoes: 60 });
+  if (!limite.permitido) {
     return NextResponse.json({ erro: 'Muitas consultas. Aguarde um momento.' }, { status: 429 });
   }
 
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const orderId = searchParams.get('order_id') || searchParams.get('pedido_id');
-    const paymentIdParam = searchParams.get('payment_id');
-
-    // 0. Autenticação
-    const supabaseServidor = await criarClienteServidor();
-    const { data: { user } } = await supabaseServidor.auth.getUser();
-
-    if (!user) {
+    const sessao = await obterSessaoApi();
+    if (!sessao) {
       return NextResponse.json({ erro: 'Não autorizado' }, { status: 401 });
     }
 
-    if (!orderId && !paymentIdParam) {
-      return NextResponse.json({ status_pedido: null, mensagem: 'Identificador do pedido ausente.' });
-    }
-
+    const sp = request.nextUrl.searchParams;
+    const orderId = sp.get('order_id') || sp.get('pedido_id');
+    const paymentIdParam = sp.get('payment_id');
     const admin = criarClienteAdmin();
-    let order: Record<string, any> | null = null;
 
-    // 1. Busca local por order_id
-    if (orderId && UUID_REGEX.test(orderId)) {
-      const { data: o } = await admin
+    let pedido: (PedidoLojaBanco & { mercado_pago_payment_id: string | null; paid_at: string | null }) | null = null;
+    if (ehUuid(orderId)) {
+      const { data } = await admin
         .from('store_orders')
-        .select(`
-          id,
-          user_id,
-          atletica_id,
-          status,
-          payment_method,
-          total_amount,
-          mercado_pago_payment_id,
-          paid_at,
-          created_at,
-          items:store_order_items(*)
-        `)
+        .select('id, user_id, status, total_amount, mercado_pago_payment_id, paid_at')
         .eq('id', orderId)
         .maybeSingle();
-
-      order = o;
-    }
-
-    // 1.1 Busca local por mercado_pago_payment_id
-    if (!order && paymentIdParam) {
-      const { data: o } = await admin
+      pedido = data;
+    } else if (ehIdPagamentoGateway(paymentIdParam)) {
+      const { data } = await admin
         .from('store_orders')
-        .select(`
-          id,
-          user_id,
-          atletica_id,
-          status,
-          payment_method,
-          total_amount,
-          mercado_pago_payment_id,
-          paid_at,
-          created_at,
-          items:store_order_items(*)
-        `)
+        .select('id, user_id, status, total_amount, mercado_pago_payment_id, paid_at')
         .eq('mercado_pago_payment_id', String(paymentIdParam))
+        .eq('user_id', sessao.user.id)
         .maybeSingle();
-
-      order = o;
+      pedido = data;
     }
 
-    // Validação IDOR
-    if (order && order.user_id !== user.id) {
-      const { data: perfil } = await supabaseServidor.from('profiles').select('role').eq('id', user.id).single();
-      if (!perfil || perfil.role !== 'admin') {
-        return NextResponse.json({ erro: 'Acesso não autorizado a este pedido.' }, { status: 403 });
+    if (!pedido) {
+      return NextResponse.json({ status: null, status_pedido: null, mensagem: 'Pedido não encontrado.' });
+    }
+
+    if (pedido.user_id !== sessao.user.id && !ehAdminAtivo(sessao.perfil)) {
+      logger.security('IDOR prevenido ao consultar pedido da loja', { caller: sessao.user.id, target: pedido.user_id });
+      return NextResponse.json({ erro: 'Acesso não autorizado a este pedido.' }, { status: 403 });
+    }
+
+    if (pedido.status !== 'pending_payment') {
+      return resposta(pedido.status, pedido.id, { total_amount: pedido.total_amount, paid_at: pedido.paid_at });
+    }
+
+    if (!ehMercadoPagoConfigurado()) {
+      return resposta('pending_payment', pedido.id);
+    }
+
+    let candidatos: PagamentoGateway[] = [];
+    if (ehIdPagamentoGateway(pedido.mercado_pago_payment_id)) {
+      try {
+        const direto = await paymentClient.get({ id: String(pedido.mercado_pago_payment_id) });
+        if (direto) candidatos = [direto as unknown as PagamentoGateway];
+      } catch (err) {
+        logger.warn('Consulta direta de pagamento da loja falhou', { order_id: pedido.id, erro: String(err) });
+      }
+    }
+    if (!candidatos.some((p) => p.status === 'approved')) {
+      try {
+        const busca = await paymentClient.search({
+          options: { external_reference: pedido.id, sort: 'date_created', criteria: 'desc', limit: 5 },
+        });
+        candidatos = [...candidatos, ...((busca.results || []) as unknown as PagamentoGateway[])];
+      } catch (err) {
+        logger.warn('Busca de pagamento da loja falhou', { order_id: pedido.id, erro: String(err) });
       }
     }
 
-    // 2. Se o pedido já está pago
-    if (order && order.status === 'paid') {
-      return NextResponse.json({
-        status_pedido: 'paid',
-        mensagem: 'Pagamento confirmado com sucesso!',
-        order_id: order.id,
-        total_amount: order.total_amount,
-        paid_at: order.paid_at,
-      });
+    const aprovado = candidatos.find((p) => p.status === 'approved');
+    if (aprovado) {
+      const resultado = await confirmarPedidoLoja(admin, pedido, aprovado);
+      if (resultado.sucesso) return resposta('paid', pedido.id, { total_amount: pedido.total_amount });
+      if (resultado.erro === 'stock_unavailable') return resposta('stock_unavailable', pedido.id);
+      return resposta('pending_payment', pedido.id);
     }
 
-    // 2.1 Se o pedido falhou ou foi cancelado
-    if (order && ['failed', 'cancelled', 'refunded', 'stock_unavailable'].includes(order.status)) {
-      return NextResponse.json({
-        status_pedido: order.status,
-        mensagem: order.status === 'stock_unavailable'
-          ? 'Estoque esgotado durante o processamento. O valor será estornado.'
-          : 'O pagamento foi cancelado ou recusado.',
-        order_id: order.id,
-      });
+    if (candidatos.length > 0 && candidatos.every((p) => STATUS_GATEWAY_CANCELADOS.includes(String(p.status)))) {
+      await admin.from('store_orders').update({ status: 'failed' }).eq('id', pedido.id).eq('status', 'pending_payment');
+      return resposta('failed', pedido.id);
     }
 
-    // 3. Reconciliação com o Mercado Pago
-    if (ehMercadoPagoConfigurado()) {
-      const targetPaymentId = paymentIdParam || order?.mercado_pago_payment_id;
-
-      if (targetPaymentId) {
-        try {
-          const mpPayment = await paymentClient.get({ id: String(targetPaymentId) });
-          if (mpPayment) {
-            const statusMp = String(mpPayment.status || '');
-
-            if (statusMp === 'approved' && order?.id) {
-              // Executa confirmação atômica via RPC
-              const { data: rpcRes } = await admin.rpc('processar_pedido_loja_aprovado', {
-                p_order_id: order.id,
-                p_gateway_payment_id: String(mpPayment.id),
-                p_payment_method: String(mpPayment.payment_method_id || 'pix'),
-              });
-
-              if (rpcRes?.sucesso) {
-                return NextResponse.json({
-                  status_pedido: 'paid',
-                  mensagem: 'Pagamento confirmado e confirmado com sucesso!',
-                  order_id: order.id,
-                  total_amount: order.total_amount,
-                });
-              }
-            } else if (['rejected', 'cancelled', 'refunded', 'charged_back'].includes(statusMp) && order?.id) {
-              await admin.from('store_orders').update({ status: 'failed' }).eq('id', order.id);
-              return NextResponse.json({
-                status_pedido: 'failed',
-                mensagem: 'O pagamento foi cancelado ou recusado pela instituição financeira.',
-                order_id: order.id,
-              });
-            }
-          }
-        } catch (mpErr) {
-          logger.warn('Erro ao consultar status da loja no Mercado Pago', { targetPaymentId, erro: mpErr });
-        }
-      }
-    }
-
-    return NextResponse.json({
-      status_pedido: 'pending_payment',
-      mensagem: 'Aguardando confirmação do pagamento pelo gateway...',
-      order_id: order?.id || orderId,
-    });
+    return resposta('pending_payment', pedido.id);
   } catch (error) {
     logger.error('Erro no GET /api/loja/consultar-status-pedido', error);
     return NextResponse.json({ erro: 'Falha interna ao consultar status do pedido' }, { status: 500 });

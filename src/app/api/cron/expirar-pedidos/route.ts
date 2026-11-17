@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { criarClienteAdmin } from '@/lib/supabase/admin';
 import { logger } from '@/lib/logger';
 import { TEMPO_EXPIRACAO_PIX_MINUTOS } from '@/lib/constantes';
+import { obterIpRequisicao, validarBearer } from '@/lib/seguranca';
 
 /**
  * Endpoint de expiração de pedidos abandonados.
@@ -34,9 +35,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
+  if (!validarBearer(authHeader, cronSecret)) {
     logger.security('Tentativa de acesso não autorizado ao endpoint de expiração de pedidos', {
-      ip: request.headers.get('x-forwarded-for')?.split(',')[0] || '127.0.0.1',
+      ip: obterIpRequisicao(request.headers),
     });
     return NextResponse.json({ erro: 'Não autorizado' }, { status: 401 });
   }
@@ -99,10 +100,24 @@ export async function POST(request: NextRequest) {
       logger.info(`Expiração de pedidos: ${totalPedidosExpirados} pedido(s) pendente(s) cancelado(s) por timeout.`);
     }
 
+    // 3. Pedidos da loja aguardando pagamento há mais de 24h são cancelados
+    const limiteLoja = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: lojaExpirados } = await supabase
+      .from('store_orders')
+      .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+      .eq('status', 'pending_payment')
+      .lt('created_at', limiteLoja)
+      .select('id');
+
+    // 4. Limpeza da tabela de rate limit distribuído
+    const { data: rateLimitsRemovidos } = await supabase.rpc('limpar_rate_limits');
+
     return NextResponse.json({
       sucesso: true,
       ingressos_expirados: totalExpirados,
       pedidos_expirados: totalPedidosExpirados,
+      pedidos_loja_expirados: lojaExpirados?.length || 0,
+      rate_limits_removidos: typeof rateLimitsRemovidos === 'number' ? rateLimitsRemovidos : 0,
       executado_em: new Date().toISOString(),
     });
   } catch (error) {

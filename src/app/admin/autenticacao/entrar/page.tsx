@@ -12,6 +12,7 @@ import { criarClienteNavegador } from '@/lib/supabase/cliente';
 import { useRateLimitAuth } from '@/hooks/useRateLimitAuth';
 import { Shield, Mail, Lock, ArrowLeft, Ticket, Clock } from 'lucide-react';
 import { construirUrl } from '@/lib/dominios';
+import { sanitizarRedirecionamento } from '@/lib/validacoes';
 
 function FormularioEntrarAdmin() {
   const { entrar } = usarAutenticacao();
@@ -20,7 +21,7 @@ function FormularioEntrarAdmin() {
     setErro('');
   });
   const searchParams = useSearchParams();
-  const redirecionar = searchParams.get('redirecionar') || '/';
+  const redirecionar = sanitizarRedirecionamento(searchParams.get('redirecionar'));
   const urlSitePrincipal = construirUrl('cliente', '/');
 
   const [email, setEmail] = useState('');

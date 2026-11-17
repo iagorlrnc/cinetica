@@ -18,7 +18,7 @@ import {
   Trophy,
 } from 'lucide-react';
 
-const CATEGORIAS: { id: string; rotulo: string }[] = [
+const ROTULOS_CATEGORIA: { id: string; rotulo: string }[] = [
   { id: 'todas', rotulo: 'Todos os Produtos' },
   { id: 'caneca', rotulo: 'Canecas' },
   { id: 'copo', rotulo: 'Copos' },
@@ -34,6 +34,9 @@ function ConteudoLoja() {
   const [produtos, setProdutos] = useState<ProdutoLoja[]>([]);
   const [atleticas, setAtleticas] = useState<Atletica[]>([]);
   const [carregando, setCarregando] = useState(true);
+  const [erroCarga, setErroCarga] = useState(false);
+  const [tentativa, setTentativa] = useState(0);
+  const [somenteDisponiveis, setSomenteDisponiveis] = useState(false);
 
   const [busca, setBusca] = useState(searchParams.get('busca') || '');
   const [categoriaAtiva, setCategoriaAtiva] = useState(searchParams.get('categoria') || 'todas');
@@ -46,6 +49,7 @@ function ConteudoLoja() {
   useEffect(() => {
     async function carregarDados() {
       setCarregando(true);
+      setErroCarga(false);
       try {
         // 1. Busca produtos ativos com dados da atlética
         const { data: prods, error: errProds } = await supabase
@@ -57,7 +61,9 @@ function ConteudoLoja() {
           .eq('is_active', true)
           .order('created_at', { ascending: false });
 
-        if (!errProds && prods) {
+        if (errProds) {
+          setErroCarga(true);
+        } else if (prods) {
           setProdutos(prods as ProdutoLoja[]);
         }
 
@@ -73,25 +79,43 @@ function ConteudoLoja() {
         }
       } catch (err) {
         console.error('Erro ao carregar loja:', err);
+        setErroCarga(true);
       } finally {
         setCarregando(false);
       }
     }
 
     carregarDados();
-  }, [supabase]);
+  }, [supabase, tentativa]);
+
+  // Categorias exibidas = categorias que realmente existem nos produtos do banco
+  const contagemCategorias = produtos.reduce<Record<string, number>>((acc, p) => {
+    acc[p.category] = (acc[p.category] || 0) + 1;
+    return acc;
+  }, {});
+  const CATEGORIAS = [
+    { id: 'todas', rotulo: `Todos os Produtos (${produtos.length})` },
+    ...Object.keys(contagemCategorias)
+      .map((id) => ({
+        id,
+        rotulo: `${ROTULOS_CATEGORIA.find((c) => c.id === id)?.rotulo || id} (${contagemCategorias[id]})`,
+      }))
+      .sort((a, b) => a.rotulo.localeCompare(b.rotulo, 'pt-BR')),
+  ];
 
   // Contagem de filtros ativos (exceto busca direta)
   const totalFiltrosAtivos =
     (categoriaAtiva !== 'todas' ? 1 : 0) +
     (atleticaSelecionada ? 1 : 0) +
-    (ordenacao !== 'novos' ? 1 : 0);
+    (ordenacao !== 'novos' ? 1 : 0) +
+    (somenteDisponiveis ? 1 : 0);
 
   function limparTodosFiltros() {
     setBusca('');
     setCategoriaAtiva('todas');
     setAtleticaSelecionada('');
     setOrdenacao('novos');
+    setSomenteDisponiveis(false);
   }
 
   // Filtragem e Ordenação dos Produtos
@@ -111,6 +135,8 @@ function ConteudoLoja() {
         if (p.category !== categoriaAtiva) return false;
       }
 
+      if (somenteDisponiveis && p.stock_quantity <= 0) return false;
+
       // Filtro de atlética
       if (atleticaSelecionada) {
         if (p.atletica_id !== atleticaSelecionada) return false;
@@ -119,6 +145,10 @@ function ConteudoLoja() {
       return true;
     })
     .sort((a, b) => {
+      // Esgotados sempre ao final
+      const esgA = a.stock_quantity <= 0 ? 1 : 0;
+      const esgB = b.stock_quantity <= 0 ? 1 : 0;
+      if (esgA !== esgB) return esgA - esgB;
       if (ordenacao === 'menor_preco') return a.price - b.price;
       if (ordenacao === 'maior_preco') return b.price - a.price;
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
@@ -243,7 +273,19 @@ function ConteudoLoja() {
         </div>
 
         {/* Grid de Produtos (Sempre 2 Colunas no Celular) */}
-        {carregando ? (
+        {erroCarga && !carregando ? (
+          <div className="py-16 text-center rounded-3xl bg-white border border-slate-200 p-8 space-y-4 max-w-md mx-auto shadow-sm">
+            <h3 className="text-lg font-bold text-slate-900 font-titulo">Não foi possível carregar a loja</h3>
+            <p className="text-xs text-slate-500">Verifique sua conexão e tente novamente.</p>
+            <button
+              type="button"
+              onClick={() => setTentativa((t) => t + 1)}
+              className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold uppercase tracking-wider inline-flex items-center gap-2"
+            >
+              <RotateCcw size={14} /> Tentar novamente
+            </button>
+          </div>
+        ) : carregando ? (
           <div className="py-20 flex flex-col items-center justify-center gap-3">
             <Carregando tamanho="lg" texto="Carregando produtos da loja..." />
           </div>
@@ -312,6 +354,16 @@ function ConteudoLoja() {
 
             {/* Conteúdo com Scroll */}
             <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
+              <label className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer">
+                <span className="text-xs font-black uppercase tracking-wider text-slate-800">Somente disponíveis</span>
+                <input
+                  type="checkbox"
+                  checked={somenteDisponiveis}
+                  onChange={(e) => setSomenteDisponiveis(e.target.checked)}
+                  className="w-4 h-4 accent-[#c59941]"
+                />
+              </label>
+
               {/* 1. Filtro por Categoria */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">

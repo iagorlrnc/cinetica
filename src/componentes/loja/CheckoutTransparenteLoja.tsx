@@ -255,7 +255,7 @@ export default function CheckoutTransparenteLoja({
           setTimeout(() => {
             router.push('/loja/meus-pedidos');
           }, 2000);
-        } else if (dados.status === 'cancelled' || dados.status === 'expired') {
+        } else if (['cancelled', 'expired', 'failed', 'refunded', 'stock_unavailable'].includes(dados.status)) {
           if (timerPollingRef.current) clearInterval(timerPollingRef.current);
           setPixExpirado(true);
         }

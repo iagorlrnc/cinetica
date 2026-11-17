@@ -11,11 +11,12 @@ import CaptchaCloudflare from '@/componentes/ui/CaptchaCloudflare';
 import Carregando from '@/componentes/ui/Carregando';
 import { criarClienteNavegador } from '@/lib/supabase/cliente';
 import { usarAutenticacao } from '@/contextos/ContextoAutenticacao';
+import { sanitizarRedirecionamento } from '@/lib/validacoes';
 
 function FormularioEntrar() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirecionarPara = searchParams.get('redirecionar') || '/';
+  const redirecionarPara = sanitizarRedirecionamento(searchParams.get('redirecionar'));
 
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');

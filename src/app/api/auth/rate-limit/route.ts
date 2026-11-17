@@ -6,111 +6,97 @@ import {
   registrarSucessoRateLimit,
   verificarRateLimitEmailRecuperacao,
   registrarEnvioEmailRecuperacao,
+  limitarRequisicao,
 } from '@/lib/rateLimit';
 import { validarTurnstileToken } from '@/lib/turnstile';
+import { criarClienteServidor } from '@/lib/supabase/servidor';
+
+const MSG_CAPTCHA = 'Verificação de segurança (captcha) falhou. Recarregue a página e tente novamente.';
+
+function emailNormalizado(valor: unknown): string | null {
+  if (typeof valor !== 'string') return null;
+  const e = valor.trim().toLowerCase();
+  return e.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) ? e : null;
+}
+
+/** Captcha é obrigatório sempre que o servidor tem a secret do Turnstile configurada. */
+async function captchaValido(token: unknown, ip: string): Promise<boolean> {
+  if (!process.env.CLOUDFLARE_TURNSTILE_SECRET_KEY) {
+    return process.env.NODE_ENV !== 'production' || !process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY;
+  }
+  return typeof token === 'string' && token.length > 0 && token.length < 4096 && validarTurnstileToken(token, ip);
+}
 
 export async function GET(request: NextRequest) {
   const ip = obterIPCliente(request);
-  const { searchParams } = new URL(request.url);
-  const email = searchParams.get('email');
+  const email = emailNormalizado(request.nextUrl.searchParams.get('email'));
 
-  // Se informou e-mail, checa primeiro se o e-mail está em cooldown/bloqueado
   if (email) {
     const statusEmail = verificarRateLimitEmailRecuperacao(email);
-    if (statusEmail.bloqueado) {
-      return NextResponse.json(statusEmail, { status: 429 });
-    }
+    if (statusEmail.bloqueado) return NextResponse.json(statusEmail, { status: 429 });
   }
 
   const status = verificarRateLimit(ip);
-  if (status.bloqueado) {
-    return NextResponse.json(status, { status: 429 });
-  }
-  return NextResponse.json(status);
+  return NextResponse.json(status, { status: status.bloqueado ? 429 : 200 });
 }
 
 export async function POST(request: NextRequest) {
   const ip = obterIPCliente(request);
 
-  try {
-    const body = await request.json();
-    const acao = body.acao;
-    const ehAdmin = body.tipo === 'admin' || body.ehAdmin === true;
-    const turnstileToken = body.turnstileToken;
-    const email = body.email;
-
-    // 1. Ação específica: Registrar envio bem-sucedido de recuperação de senha para o e-mail
-    if (acao === 'registrar_recuperacao') {
-      if (email) {
-        const statusEmail = registrarEnvioEmailRecuperacao(email);
-        return NextResponse.json(statusEmail);
-      }
-      return NextResponse.json({ bloqueado: false, segundosRestantes: 60 });
-    }
-
-    // 2. Ação específica: Verificar se o e-mail ou IP estão bloqueados antes de enviar recuperação
-    if (acao === 'verificar_recuperacao') {
-      // Checagem de Captcha Turnstile
-      if (turnstileToken) {
-        const captchaValido = await validarTurnstileToken(turnstileToken, ip);
-        if (!captchaValido) {
-          return NextResponse.json(
-            { bloqueado: true, segundosRestantes: 0, tentativasConsecutivas: 0, mensagem: 'Verificação de segurança (captcha) falhou. Recarregue a página e tente novamente.' },
-            { status: 403 }
-          );
-        }
-      }
-
-      // Checagem de Rate Limit por IP
-      const statusIp = verificarRateLimit(ip);
-      if (statusIp.bloqueado) {
-        return NextResponse.json(statusIp, { status: 429 });
-      }
-
-      // Checagem de Rate Limit específico para o E-mail solicitado
-      if (email) {
-        const statusEmail = verificarRateLimitEmailRecuperacao(email);
-        if (statusEmail.bloqueado) {
-          return NextResponse.json(statusEmail, { status: 429 });
-        }
-      }
-
-      return NextResponse.json({ bloqueado: false, segundosRestantes: 0 });
-    }
-
-    // 3. Validação de Captcha Turnstile na tentativa de login/cadastro (ação 'verificar')
-    if (acao === 'verificar' && turnstileToken) {
-      const captchaValido = await validarTurnstileToken(turnstileToken, ip);
-      if (!captchaValido) {
-        return NextResponse.json(
-          { bloqueado: true, segundosRestantes: 0, tentativasConsecutivas: 0, mensagem: 'Verificação de segurança (captcha) falhou. Recarregue a página e tente novamente.' },
-          { status: 403 }
-        );
-      }
-    }
-
-    if (acao === 'registrar_erro') {
-      const status = registrarErroRateLimit(ip, ehAdmin);
-      if (status.bloqueado) {
-        return NextResponse.json(status, { status: 429 });
-      }
-      return NextResponse.json(status);
-    } else if (acao === 'registrar_sucesso') {
-      registrarSucessoRateLimit(ip);
-      return NextResponse.json({
-        bloqueado: false,
-        segundosRestantes: 0,
-        tentativasConsecutivas: 0,
-      });
-    } else {
-      const status = verificarRateLimit(ip);
-      if (status.bloqueado) {
-        return NextResponse.json(status, { status: 429 });
-      }
-      return NextResponse.json(status);
-    }
-  } catch {
-    const status = verificarRateLimit(ip);
-    return NextResponse.json(status);
+  // Proteção do próprio endpoint contra abuso
+  const limiteEndpoint = await limitarRequisicao(`auth_rl_endpoint:${ip}`, { janelaMs: 60_000, maxRequisicoes: 40 });
+  if (!limiteEndpoint.permitido) {
+    return NextResponse.json(limiteEndpoint, { status: 429 });
   }
+
+  const body = await request.json().catch(() => ({} as Record<string, unknown>));
+  const acao = body.acao;
+  const ehAdmin = body.tipo === 'admin' || body.ehAdmin === true;
+  const email = emailNormalizado(body.email);
+
+  if (acao === 'registrar_recuperacao') {
+    if (!email) return NextResponse.json({ bloqueado: false, segundosRestantes: 60 });
+    return NextResponse.json(registrarEnvioEmailRecuperacao(email));
+  }
+
+  if (acao === 'verificar_recuperacao') {
+    if (!(await captchaValido(body.turnstileToken, ip))) {
+      return NextResponse.json({ bloqueado: true, segundosRestantes: 0, tentativasConsecutivas: 0, mensagem: MSG_CAPTCHA }, { status: 403 });
+    }
+    const statusIp = verificarRateLimit(ip);
+    if (statusIp.bloqueado) return NextResponse.json(statusIp, { status: 429 });
+    if (email) {
+      const statusEmail = verificarRateLimitEmailRecuperacao(email);
+      if (statusEmail.bloqueado) return NextResponse.json(statusEmail, { status: 429 });
+    }
+    return NextResponse.json({ bloqueado: false, segundosRestantes: 0 });
+  }
+
+  if (acao === 'verificar') {
+    if (!(await captchaValido(body.turnstileToken, ip))) {
+      return NextResponse.json({ bloqueado: true, segundosRestantes: 0, tentativasConsecutivas: 0, mensagem: MSG_CAPTCHA }, { status: 403 });
+    }
+    const status = verificarRateLimit(ip);
+    return NextResponse.json(status, { status: status.bloqueado ? 429 : 200 });
+  }
+
+  if (acao === 'registrar_erro') {
+    const status = registrarErroRateLimit(ip, ehAdmin);
+    return NextResponse.json(status, { status: status.bloqueado ? 429 : 200 });
+  }
+
+  if (acao === 'registrar_sucesso') {
+    // Só zera o contador quando existe de fato uma sessão autenticada (impede reset arbitrário)
+    try {
+      const supabase = await criarClienteServidor();
+      const { data } = await supabase.auth.getUser();
+      if (data?.user) registrarSucessoRateLimit(ip);
+    } catch {
+      // sem sessão: não zera
+    }
+    return NextResponse.json({ bloqueado: false, segundosRestantes: 0, tentativasConsecutivas: 0 });
+  }
+
+  const status = verificarRateLimit(ip);
+  return NextResponse.json(status, { status: status.bloqueado ? 429 : 200 });
 }

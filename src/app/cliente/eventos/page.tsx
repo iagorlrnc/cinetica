@@ -3,8 +3,6 @@
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import Cartao from '@/componentes/ui/Cartao';
-import CampoTexto from '@/componentes/ui/CampoTexto';
 import Botao from '@/componentes/ui/Botao';
 import EstadoVazio from '@/componentes/ui/EstadoVazio';
 import { SkeletonCard } from '@/componentes/ui/Carregando';
@@ -12,7 +10,7 @@ import { criarClienteNavegador } from '@/lib/supabase/cliente';
 import { formatarData, formatarMoeda, ordenarEventosPorPrioridade, matchFiltroCidade } from '@/lib/utilitarios';
 import type { Evento, LoteIngresso, Atletica } from '@/tipos';
 import BarraNavegacaoMobile from '@/componentes/layout/BarraNavegacaoMobile';
-import { Calendar, MapPin, Users, Ticket, SlidersHorizontal } from 'lucide-react';
+import { Calendar, MapPin, Users, Ticket, SlidersHorizontal, Search, X, RotateCcw } from 'lucide-react';
 
 import { salvarVariosEventosCache } from '@/lib/cacheEventos';
 
@@ -24,15 +22,22 @@ interface EventoComRelacoes extends Omit<Evento, 'atletica'> {
 // Cache em memória para carregamento instantâneo (0ms) ao alternar de aba
 let cacheEventos: EventoComRelacoes[] | null = null;
 
+const TAMANHO_PAGINA = 48;
+type Periodo = 'proximos' | 'todos' | 'passados';
+
 function ConteudoEventos() {
   const searchParams = useSearchParams();
   const buscaInicial = searchParams.get('busca') || searchParams.get('atletica') || '';
   const cidadeInicial = searchParams.get('cidade') || '';
-  
+
   const [eventos, setEventos] = useState<EventoComRelacoes[]>(cacheEventos || []);
   const [carregando, setCarregando] = useState(!cacheEventos);
+  const [erroCarga, setErroCarga] = useState(false);
+  const [temMais, setTemMais] = useState(false);
+  const [carregandoMais, setCarregandoMais] = useState(false);
   const [busca, setBusca] = useState(buscaInicial);
   const [cidade, setCidade] = useState(cidadeInicial);
+  const [periodo, setPeriodo] = useState<Periodo>('proximos');
   const supabase = criarClienteNavegador();
 
   useEffect(() => {
@@ -42,35 +47,56 @@ function ConteudoEventos() {
     setCidade(c);
   }, [searchParams]);
 
-  async function buscarEventos() {
-    if (!cacheEventos) setCarregando(true);
-    const { data } = await supabase
+  async function buscarEventos(inicio = 0) {
+    if (inicio === 0 && !cacheEventos) setCarregando(true);
+    if (inicio > 0) setCarregandoMais(true);
+    setErroCarga(false);
+
+    const { data, error } = await supabase
       .from('eventos')
       .select('id, slug, titulo, imagem_url, data_evento, local, cidade, status, apagado_pelo_diretor, atletica:atleticas(id, nome), lotes_ingresso(id, preco, quantidade_total, quantidade_vendida, ativo)')
       .eq('apagado_pelo_diretor', false)
       .in('status', ['publicado', 'encerrado', 'cancelado'])
       .order('data_evento', { ascending: true })
-      .range(0, 49);
+      .range(inicio, inicio + TAMANHO_PAGINA - 1);
 
-    if (data) {
-      const novoseventos = (data as unknown as (EventoComRelacoes & { apagado_pelo_diretor?: boolean })[]).filter(e => !e.apagado_pelo_diretor);
-      const ordenados = ordenarEventosPorPrioridade(novoseventos);
+    if (error) {
+      setErroCarga(true);
+    } else if (data) {
+      const novos = (data as unknown as (EventoComRelacoes & { apagado_pelo_diretor?: boolean })[]).filter(e => !e.apagado_pelo_diretor);
+      const base = inicio === 0 ? [] : eventos;
+      const mapa = new Map([...base, ...novos].map((e) => [e.id, e]));
+      const ordenados = ordenarEventosPorPrioridade([...mapa.values()]);
       cacheEventos = ordenados;
       salvarVariosEventosCache(ordenados as unknown as import('@/lib/cacheEventos').EventoCompleto[]);
       setEventos(ordenados);
+      setTemMais(data.length === TAMANHO_PAGINA);
     }
     setCarregando(false);
+    setCarregandoMais(false);
   }
 
-  useEffect(() => { buscarEventos(); }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { buscarEventos(0); }, []);
 
+  const [agora] = useState(() => Date.now());
+  const ehPassado = (e: EventoComRelacoes) =>
+    e.status === 'encerrado' || e.status === 'cancelado' || new Date(e.data_evento).getTime() < agora - 6 * 3600 * 1000;
+
+  const cidadesDisponiveis = Array.from(
+    new Set(eventos.map((e) => (e.cidade || '').trim()).filter(Boolean))
+  ).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+  const termo = busca.trim().toLowerCase();
   const eventosFiltrados = eventos.filter(e => {
-    const matchBusca = !busca ||
-      e.titulo.toLowerCase().includes(busca.toLowerCase()) ||
-      e.cidade?.toLowerCase().includes(busca.toLowerCase()) ||
-      e.atletica?.nome.toLowerCase().includes(busca.toLowerCase());
+    const matchBusca = !termo ||
+      e.titulo.toLowerCase().includes(termo) ||
+      e.local?.toLowerCase().includes(termo) ||
+      e.cidade?.toLowerCase().includes(termo) ||
+      e.atletica?.nome.toLowerCase().includes(termo);
     const matchCidade = matchFiltroCidade(e.cidade, cidade);
-    return matchBusca && matchCidade;
+    const matchPeriodo = periodo === 'todos' || (periodo === 'passados' ? ehPassado(e) : !ehPassado(e));
+    return matchBusca && matchCidade && matchPeriodo;
   });
 
   function extrairDataTicketmaster(dataIso: string) {
@@ -93,9 +119,77 @@ function ConteudoEventos() {
         <h1 className="text-2xl sm:text-3xl font-black font-titulo mb-2 text-slate-900">
           Todos os <span className="gradiente-texto">Eventos</span>
         </h1>
-        <p className="text-slate-600 mb-8">Encontre o evento perfeito para você</p>
+        <p className="text-slate-600 mb-6">Encontre o evento perfeito para você</p>
 
-        {carregando ? (
+        <div className="space-y-3 mb-8">
+          <div className="relative">
+            <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="search"
+              aria-label="Buscar eventos"
+              placeholder="Buscar por evento, local, cidade ou atlética..."
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              maxLength={80}
+              className="w-full bg-white border border-slate-200 rounded-2xl pl-10 pr-10 py-3 text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#c59941] transition-all shadow-sm"
+            />
+            {busca && (
+              <button
+                type="button"
+                onClick={() => setBusca('')}
+                aria-label="Limpar busca"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1 rounded-full hover:bg-slate-100"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {([
+              ['proximos', 'Próximos'],
+              ['todos', 'Todos'],
+              ['passados', 'Encerrados'],
+            ] as [Periodo, string][]).map(([id, rotulo]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setPeriodo(id)}
+                aria-pressed={periodo === id}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border transition-all ${
+                  periodo === id
+                    ? 'bg-[#c59941] border-[#c59941] text-slate-950'
+                    : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                }`}
+              >
+                {rotulo}
+              </button>
+            ))}
+
+            {cidadesDisponiveis.length > 1 && (
+              <select
+                aria-label="Filtrar por cidade"
+                value={cidade}
+                onChange={(e) => setCidade(e.target.value)}
+                className="ml-auto bg-white border border-slate-200 rounded-full px-3.5 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-[#c59941]"
+              >
+                <option value="">Todas as cidades</option>
+                {cidadesDisponiveis.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            )}
+          </div>
+        </div>
+
+        {erroCarga && eventos.length === 0 ? (
+          <EstadoVazio
+            titulo="Não foi possível carregar os eventos"
+            descricao="Verifique sua conexão e tente novamente."
+            icone={<RotateCcw className="w-7 h-7" />}
+            acao={<Botao variante="contorno" onClick={() => buscarEventos(0)}>Tentar novamente</Botao>}
+          />
+        ) : carregando ? (
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
             {Array.from({ length: 9 }).map((_, i) => <SkeletonCard key={i} className="h-[280px] sm:h-[360px]" />)}
           </div>
@@ -245,17 +339,31 @@ function ConteudoEventos() {
         </div>
       ) : (
         <EstadoVazio
-          titulo="Nenhum evento disponível no momento"
-          descricao={busca ? `Não encontramos eventos que coincidam com a busca "${busca}". Tente buscar por outros termos.` : "Não há eventos cadastrados no momento. Volte em breve para confira novidades!"}
+          titulo={periodo === 'proximos' && !busca && !cidade ? 'Nenhum evento programado' : 'Nenhum evento encontrado'}
+          descricao={
+            busca
+              ? `Não encontramos eventos que coincidam com "${busca}". Tente outros termos.`
+              : periodo === 'proximos'
+                ? 'Não há eventos com vendas abertas no momento. Volte em breve para conferir novidades!'
+                : 'Não há eventos para os filtros selecionados.'
+          }
           icone={<SlidersHorizontal className="w-7 h-7" />}
           acao={
-            busca ? (
-              <Botao variante="contorno" onClick={() => setBusca('')}>
-                Limpar busca
+            busca || cidade || periodo !== 'todos' ? (
+              <Botao variante="contorno" onClick={() => { setBusca(''); setCidade(''); setPeriodo('todos'); }}>
+                Ver todos os eventos
               </Botao>
             ) : undefined
           }
         />
+      )}
+
+      {!carregando && temMais && (
+        <div className="flex justify-center mt-10">
+          <Botao variante="contorno" carregando={carregandoMais} onClick={() => buscarEventos(eventos.length)}>
+            Carregar mais eventos
+          </Botao>
+        </div>
       )}
       </div>
     </>

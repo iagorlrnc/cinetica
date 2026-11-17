@@ -1,109 +1,74 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { criarClienteServidor } from '@/lib/supabase/servidor';
 import { criarClienteAdmin } from '@/lib/supabase/admin';
+import { obterSessaoApi, ehGestorAtivo, podeGerenciarAtletica } from '@/lib/autenticacaoApi';
 import { logger } from '@/lib/logger';
+import { ehUuid, MENSAGEM_ERRO_INTERNO } from '@/lib/seguranca';
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
+/** Marca um pedido pago da loja como entregue (irreversível). */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await criarClienteServidor();
-    const { data: { user }, error: authErr } = await supabase.auth.getUser();
-
-    if (authErr || !user) {
+    const sessao = await obterSessaoApi(request);
+    if (!sessao) {
       return NextResponse.json({ erro: 'Não autenticado' }, { status: 401 });
     }
-
-    const { data: perfil } = await supabase
-      .from('profiles')
-      .select('id, role, atletica_id, nome')
-      .eq('id', user.id)
-      .single();
-
-    if (!perfil || (perfil.role !== 'diretor' && perfil.role !== 'admin')) {
-      return NextResponse.json({ erro: 'Acesso restrito para diretores e administradores.' }, { status: 403 });
+    if (!ehGestorAtivo(sessao.perfil)) {
+      return NextResponse.json({ erro: 'Acesso restrito para diretores e administradores ativos.' }, { status: 403 });
     }
 
-    const body = await request.json();
-    const { order_id, entregue = true } = body;
-
-    if (!order_id || !UUID_REGEX.test(order_id)) {
+    const body = await request.json().catch(() => ({}));
+    const orderId = body?.order_id;
+    if (!ehUuid(orderId)) {
       return NextResponse.json({ erro: 'ID de pedido inválido.' }, { status: 400 });
     }
 
     const admin = criarClienteAdmin();
-
-    // 1. Busca o pedido para validar permissão da atlética
-    const { data: order, error: errOrder } = await admin
+    const { data: order } = await admin
       .from('store_orders')
       .select('id, atletica_id, status, metadata')
-      .eq('id', order_id)
-      .single();
+      .eq('id', orderId)
+      .maybeSingle();
 
-    if (errOrder || !order) {
+    if (!order) {
       return NextResponse.json({ erro: 'Pedido não encontrado.' }, { status: 404 });
     }
-
-    if (perfil.role === 'diretor' && order.atletica_id !== perfil.atletica_id) {
-      logger.security('Tentativa não autorizada de alterar entrega de pedido de outra atlética', {
-        userId: user.id,
-        orderId: order_id,
-      });
+    if (!podeGerenciarAtletica(sessao.perfil, order.atletica_id)) {
+      logger.security('Tentativa não autorizada de alterar entrega de pedido de outra atlética', { userId: sessao.user.id, orderId });
       return NextResponse.json({ erro: 'Você não tem permissão para gerenciar pedidos desta atlética.' }, { status: 403 });
     }
-
-    const metadataAtual = (order.metadata && typeof order.metadata === 'object') ? order.metadata : {};
-
-    // Validação: Não permite desmarcar entrega se já foi entregue
-    if (metadataAtual.entregue) {
-      return NextResponse.json(
-        { erro: 'Este pedido já foi marcado como entregue e não pode ser desmarcado.' },
-        { status: 400 }
-      );
+    if (order.status !== 'paid') {
+      return NextResponse.json({ erro: 'Apenas pedidos pagos podem ser marcados como entregues.' }, { status: 400 });
     }
 
-    const novoMetadata = {
-      ...metadataAtual,
-      entregue: true,
-      entregue_em: new Date().toISOString(),
-      entregue_por_nome: perfil.nome || 'Diretoria',
-      entregue_por_id: user.id,
-    };
+    const metadataAtual = order.metadata && typeof order.metadata === 'object' ? order.metadata as Record<string, unknown> : {};
+    if (metadataAtual.entregue) {
+      return NextResponse.json({ erro: 'Este pedido já foi marcado como entregue e não pode ser desmarcado.' }, { status: 400 });
+    }
 
-    const { data: orderAtualizado, error: errUpdate } = await admin
+    const { data: atualizado, error } = await admin
       .from('store_orders')
       .update({
-        metadata: novoMetadata,
+        metadata: {
+          ...metadataAtual,
+          entregue: true,
+          entregue_em: new Date().toISOString(),
+          entregue_por_nome: sessao.perfil?.nome || 'Diretoria',
+          entregue_por_id: sessao.user.id,
+        },
         updated_at: new Date().toISOString(),
       })
-      .eq('id', order_id)
-      .select(`
-        *,
-        user:profiles(id, nome, email, telefone, cpf),
-        items:store_order_items(*)
-      `)
+      .eq('id', orderId)
+      .select('*, user:profiles(id, nome, email, telefone), items:store_order_items(*)')
       .single();
 
-    if (errUpdate || !orderAtualizado) {
-      logger.error('Erro ao atualizar status de entrega do pedido', { erro: errUpdate?.message });
+    if (error || !atualizado) {
+      logger.error('Erro ao atualizar entrega do pedido', error);
       return NextResponse.json({ erro: 'Falha ao atualizar status de entrega.' }, { status: 500 });
     }
 
-    logger.info('Status de entrega do pedido atualizado com sucesso', {
-      orderId: order_id,
-      entregue: Boolean(entregue),
-      usuarioId: user.id,
-    });
-
-    return NextResponse.json({
-      sucesso: true,
-      mensagem: entregue ? 'Pedido marcado como entregue!' : 'Status de entrega desmarcado.',
-      order: orderAtualizado,
-    });
+    logger.info('Pedido da loja marcado como entregue', { orderId, usuarioId: sessao.user.id });
+    return NextResponse.json({ sucesso: true, mensagem: 'Pedido marcado como entregue!', order: atualizado });
   } catch (error) {
-    logger.error('Erro inesperado ao atualizar entrega do pedido', {
-      erro: error instanceof Error ? error.message : String(error),
-    });
-    return NextResponse.json({ erro: 'Erro interno no servidor.' }, { status: 500 });
+    logger.error('Erro inesperado ao atualizar entrega do pedido', error);
+    return NextResponse.json({ erro: MENSAGEM_ERRO_INTERNO }, { status: 500 });
   }
 }

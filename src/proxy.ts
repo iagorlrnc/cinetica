@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { obterSubdominio } from '@/lib/dominios';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get('host') || '';
   const subdominio = obterSubdominio(hostname);
@@ -89,7 +89,7 @@ export async function middleware(request: NextRequest) {
       .eq('id', userDiretor.id)
       .maybeSingle();
 
-    if (!perfil || (perfil.role !== 'diretor' && perfil.role !== 'admin')) {
+    if (!perfil || perfil.status !== 'ativo' || (perfil.role !== 'diretor' && perfil.role !== 'admin')) {
       const urlHome = request.nextUrl.clone();
       urlHome.pathname = '/';
       urlHome.searchParams.set('erro', 'permissao_negada');
@@ -117,7 +117,7 @@ export async function middleware(request: NextRequest) {
       .eq('id', userAdmin.id)
       .maybeSingle();
 
-    if (!perfil || perfil.role !== 'admin') {
+    if (!perfil || perfil.status !== 'ativo' || perfil.role !== 'admin') {
       const urlHome = request.nextUrl.clone();
       urlHome.pathname = '/';
       urlHome.searchParams.set('erro', 'permissao_negada');
@@ -171,11 +171,11 @@ export async function middleware(request: NextRequest) {
     // Verificar permissão
     const { data: perfil } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, status')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
-    if (!perfil || (perfil.role !== 'diretor' && perfil.role !== 'admin')) {
+    if (!perfil || perfil.status !== 'ativo' || (perfil.role !== 'diretor' && perfil.role !== 'admin')) {
       const urlLogin = request.nextUrl.clone();
       urlLogin.pathname = '/autenticacao/entrar';
       urlLogin.searchParams.set('erro', 'permissao_negada');
@@ -213,11 +213,11 @@ export async function middleware(request: NextRequest) {
     // Verificar permissão de admin
     const { data: perfil } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, status')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
-    if (!perfil || perfil.role !== 'admin') {
+    if (!perfil || perfil.status !== 'ativo' || perfil.role !== 'admin') {
       const urlLogin = request.nextUrl.clone();
       urlLogin.pathname = '/autenticacao/entrar';
       urlLogin.searchParams.set('erro', 'permissao_negada');

@@ -2,245 +2,106 @@ import { NextRequest, NextResponse } from 'next/server';
 import { paymentClient, ehMercadoPagoConfigurado } from '@/lib/mercadopago';
 import { criarClienteAdmin } from '@/lib/supabase/admin';
 import { logger } from '@/lib/logger';
-import { gerarHashIngresso } from '@/lib/gerarQrCode';
-import { enviarNotificacaoIngressoLiberado } from '@/lib/notificacoes';
 import { TEMPO_EXPIRACAO_PIX_MINUTOS } from '@/lib/constantes';
+import { ehIdPagamentoGateway, obterIpRequisicao, validarBearer } from '@/lib/seguranca';
+import { STATUS_GATEWAY_CANCELADOS, type PagamentoGateway } from '@/lib/pagamentos/comum';
+import { liberarIngressosDoPagamento, type PedidoIngresso } from '@/lib/pagamentos/ingressos';
 
 /**
- * Cron Job de Reconciliação Automática de Pedidos
- *
- * Busca pedidos pendentes há mais de 2 minutos e verifica o status real
- * na API oficial do Mercado Pago. Caso o pagamento tenha sido aprovado
- * mas o webhook não tenha sido entregue, emite os ingressos automaticamente.
- *
- * Protegido por CRON_SECRET no cabeçalho Authorization.
+ * Cron de reconciliação: pedidos pendentes há mais de 2 minutos são conferidos na
+ * API do Mercado Pago. Emissão sempre pela mesma porta validada do webhook.
+ * Protegido por `Authorization: Bearer ${CRON_SECRET}`.
  */
 export async function POST(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
-
   if (!cronSecret) {
-    logger.error('CRON_SECRET não configurado no servidor', null);
+    logger.error('CRON_SECRET não configurado', null);
     return NextResponse.json({ erro: 'Configuração de cron ausente' }, { status: 500 });
   }
-
-  if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
-    logger.security('Tentativa não autorizada de executar cron de reconciliação de pedidos', {
-      ip: request.headers.get('x-forwarded-for')?.split(',')[0] || '127.0.0.1',
-    });
+  if (!validarBearer(request.headers.get('authorization'), cronSecret)) {
+    logger.security('Acesso não autorizado ao cron de reconciliação', { ip: obterIpRequisicao(request.headers) });
     return NextResponse.json({ erro: 'Não autorizado' }, { status: 401 });
   }
-
   if (!ehMercadoPagoConfigurado()) {
-    return NextResponse.json({ erro: 'Gateway Mercado Pago não configurado' }, { status: 500 });
+    return NextResponse.json({ erro: 'Gateway Mercado Pago não configurado' }, { status: 503 });
   }
 
   const supabase = criarClienteAdmin();
-  const relatorio = {
-    verificados: 0,
-    recuperados: 0,
-    inalterados: 0,
-    cancelados: 0,
-    erros: 0,
-    detalhes: [] as Record<string, unknown>[],
-  };
+  const relatorio = { verificados: 0, recuperados: 0, inalterados: 0, cancelados: 0, erros: 0, detalhes: [] as Record<string, unknown>[] };
 
   try {
-    // Busca pedidos pendentes criados há mais de 2 minutos e com menos de 24 horas
     const limiteMinimo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
     const limiteMaximo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-    const { data: pedidosPendentes, error: errPedidos } = await supabase
+    const { data: pendentes, error } = await supabase
       .from('pedidos')
-      .select('*')
+      .select('id, comprador_id, evento_id, lote_id, quantidade, valor_total, status, gateway_payment_id, criado_em')
       .eq('status', 'pendente')
       .lt('criado_em', limiteMinimo)
       .gt('criado_em', limiteMaximo)
       .order('criado_em', { ascending: false })
       .limit(50);
 
-    if (errPedidos) {
-      logger.error('Erro ao buscar pedidos pendentes para reconciliação', errPedidos);
+    if (error) {
+      logger.error('Erro ao buscar pedidos pendentes', error);
       return NextResponse.json({ erro: 'Erro ao consultar banco de dados' }, { status: 500 });
     }
 
-    if (!pedidosPendentes || pedidosPendentes.length === 0) {
-      return NextResponse.json({
-        sucesso: true,
-        mensagem: 'Nenhum pedido pendente necessitando de reconciliação no momento.',
-        relatorio,
-      });
-    }
-
-    for (const pedido of pedidosPendentes) {
+    for (const pedido of pendentes || []) {
       relatorio.verificados++;
       try {
-        let pagamentos: Record<string, any>[] = [];
-
-        // 1. Tenta consulta direta por gateway_payment_id se disponível
-        if (pedido.gateway_payment_id) {
+        let pagamentos: PagamentoGateway[] = [];
+        if (ehIdPagamentoGateway(pedido.gateway_payment_id)) {
           try {
-            const pDirect = await paymentClient.get({ id: String(pedido.gateway_payment_id) });
-            if (pDirect) pagamentos = [pDirect as unknown as Record<string, any>];
+            const direto = await paymentClient.get({ id: String(pedido.gateway_payment_id) });
+            if (direto) pagamentos = [direto as unknown as PagamentoGateway];
           } catch {
-            // Segue para busca por external_reference
+            // segue para busca
           }
         }
-
-        // 2. Se não encontrou, busca por external_reference (ID do pedido)
-        if (pagamentos.length === 0) {
-          const searchRes = await paymentClient.search({
-            options: {
-              external_reference: pedido.id,
-              sort: 'date_created',
-              criteria: 'desc',
-              limit: 5,
-            },
+        if (!pagamentos.some((p) => p.status === 'approved')) {
+          const busca = await paymentClient.search({
+            options: { external_reference: pedido.id, sort: 'date_created', criteria: 'desc', limit: 5 },
           });
-          pagamentos = (searchRes.results || []) as Record<string, any>[];
+          pagamentos = [...pagamentos, ...((busca.results || []) as unknown as PagamentoGateway[])];
         }
 
-        if (pagamentos.length === 0) {
-          // Se o pedido já expirou há mais de 30 minutos sem nenhum pagamento gerado, marca como recusado
-          const expirou = new Date(pedido.criado_em).getTime() < Date.now() - TEMPO_EXPIRACAO_PIX_MINUTOS * 60 * 1000;
-          if (expirou) {
-            await supabase.from('pedidos').update({ status: 'recusado' }).eq('id', pedido.id);
-            relatorio.cancelados++;
-            relatorio.detalhes.push({ pedido_id: pedido.id, acao: 'expirado_sem_pagamento' });
+        const aprovado = pagamentos.find((p) => p.status === 'approved');
+        if (aprovado) {
+          const res = await liberarIngressosDoPagamento(supabase, pedido as PedidoIngresso, aprovado);
+          if (res.sucesso) {
+            relatorio.recuperados++;
+            relatorio.detalhes.push({ pedido_id: pedido.id, status: 'recuperado' });
           } else {
-            relatorio.inalterados++;
+            relatorio.erros++;
+            relatorio.detalhes.push({ pedido_id: pedido.id, erro: res.erro });
           }
           continue;
         }
 
-        const pagamentoAprovado = pagamentos.find((p) => p.status === 'approved');
-        const pagamentoCancelado = pagamentos.find((p) => ['cancelled', 'rejected', 'refunded', 'charged_back'].includes(p.status || ''));
-
-        if (pagamentoAprovado) {
-          const gatewayPaymentId = String(pagamentoAprovado.id);
-          const metodoPagamento = pagamentoAprovado.payment_method_id || 'mercadopago';
-
-          const qrHashes: string[] = [];
-          for (let i = 0; i < pedido.quantidade; i++) {
-            qrHashes.push(gerarHashIngresso(`${pedido.evento_id}-${gatewayPaymentId}-${i}`, pedido.evento_id));
-          }
-
-          // 1. Tenta via RPC
-          const { data: resRpc, error: errRpc } = await supabase.rpc('processar_pagamento_aprovado', {
-            p_pedido_id: pedido.id,
-            p_gateway_payment_id: gatewayPaymentId,
-            p_metodo_pagamento: metodoPagamento,
-            p_qr_hashes: qrHashes,
-          });
-
-          if (!errRpc && resRpc?.sucesso) {
-            relatorio.recuperados++;
-            relatorio.detalhes.push({ pedido_id: pedido.id, gateway_payment_id: gatewayPaymentId, status: 'recuperado_via_rpc' });
-
-            enviarNotificacaoIngressoLiberado({
-              comprador_id: pedido.comprador_id,
-              quantidade: pedido.quantidade,
-              gateway_transaction_id: gatewayPaymentId,
-            });
-            continue;
-          }
-
-          // 2. Fallback JS com anti-duplicação
-          await supabase.from('pedidos').update({
-            status: 'aprovado',
-            gateway_payment_id: gatewayPaymentId,
-            metodo_pagamento: metodoPagamento,
-            pago_em: new Date().toISOString(),
-          }).eq('id', pedido.id);
-
-          for (let i = 0; i < pedido.quantidade; i++) {
-            const hash = qrHashes[i];
-
-            const { data: ingExistente } = await supabase
-              .from('ingressos')
-              .select('id')
-              .eq('qr_code_hash', hash)
-              .maybeSingle();
-
-            let ingressoId = ingExistente?.id;
-
-            if (!ingressoId) {
-              const { data: ing } = await supabase
-                .from('ingressos')
-                .insert({
-                  evento_id: pedido.evento_id,
-                  lote_id: pedido.lote_id,
-                  comprador_id: pedido.comprador_id,
-                  qr_code_hash: hash,
-                  status: 'valido',
-                  data_compra: new Date().toISOString(),
-                })
-                .select('id')
-                .single();
-
-              if (ing) {
-                ingressoId = ing.id;
-              }
-            }
-
-            if (ingressoId) {
-              const { data: pagExist } = await supabase
-                .from('pagamentos')
-                .select('id')
-                .eq('ingresso_id', ingressoId)
-                .eq('gateway_transaction_id', gatewayPaymentId)
-                .maybeSingle();
-
-              if (!pagExist) {
-                await supabase.from('pagamentos').insert({
-                  ingresso_id: ingressoId,
-                  valor: pedido.valor_unitario,
-                  status: 'aprovado',
-                  gateway_transaction_id: gatewayPaymentId,
-                  metodo_pagamento: metodoPagamento,
-                });
-              }
-            }
-          }
-
-          relatorio.recuperados++;
-          relatorio.detalhes.push({ pedido_id: pedido.id, gateway_payment_id: gatewayPaymentId, status: 'recuperado_via_fallback' });
-
-          enviarNotificacaoIngressoLiberado({
-            comprador_id: pedido.comprador_id,
-            quantidade: pedido.quantidade,
-            gateway_transaction_id: gatewayPaymentId,
-          });
-        } else if (pagamentoCancelado) {
-          await supabase.from('pedidos').update({ status: 'recusado' }).eq('id', pedido.id);
+        const expirou = new Date(pedido.criado_em).getTime() < Date.now() - TEMPO_EXPIRACAO_PIX_MINUTOS * 60 * 1000;
+        const cancelado = pagamentos.length > 0 && pagamentos.every((p) => STATUS_GATEWAY_CANCELADOS.includes(String(p.status)));
+        if (cancelado || (pagamentos.length === 0 && expirou)) {
+          await supabase.from('pedidos').update({ status: 'recusado' }).eq('id', pedido.id).eq('status', 'pendente');
           relatorio.cancelados++;
-          relatorio.detalhes.push({ pedido_id: pedido.id, acao: 'marcado_como_recusado' });
+          relatorio.detalhes.push({ pedido_id: pedido.id, acao: cancelado ? 'recusado_no_gateway' : 'expirado_sem_pagamento' });
         } else {
           relatorio.inalterados++;
         }
       } catch (errPedido) {
         relatorio.erros++;
-        relatorio.detalhes.push({ pedido_id: pedido.id, erro: String(errPedido) });
+        relatorio.detalhes.push({ pedido_id: pedido.id, erro: String(errPedido).slice(0, 200) });
       }
     }
 
-    logger.info('Cron de reconciliação de pedidos finalizado', relatorio);
-
-    return NextResponse.json({
-      sucesso: true,
-      executado_em: new Date().toISOString(),
-      relatorio,
-    });
+    logger.info('Cron de reconciliação finalizado', { verificados: relatorio.verificados, recuperados: relatorio.recuperados });
+    return NextResponse.json({ sucesso: true, executado_em: new Date().toISOString(), relatorio });
   } catch (error) {
-    logger.error('Erro crítico no cron de reconciliação de pedidos', error);
+    logger.error('Erro crítico no cron de reconciliação', error);
     return NextResponse.json({ erro: 'Erro interno durante reconciliação' }, { status: 500 });
   }
 }
 
 export async function GET() {
-  return NextResponse.json({
-    status: 'ok',
-    servico: 'Cron de reconciliação de pedidos MeuIngrss',
-    descricao: 'Envie um POST com Authorization: Bearer {CRON_SECRET} para disparar a verificação',
-  });
+  return NextResponse.json({ status: 'ok' });
 }

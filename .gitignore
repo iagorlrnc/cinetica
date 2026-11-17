@@ -46,7 +46,7 @@ yarn-error.log*
 *.db
 
 # supabase
-supabase/
+/supabase/
 /supabase/
 
 # chaves e certificados sensíveis
