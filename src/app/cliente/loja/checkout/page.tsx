@@ -1,5 +1,6 @@
 'use client';
 
+import ImagemOtimizada from '@/componentes/ui/ImagemOtimizada';
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -161,9 +162,10 @@ export default function PaginaCheckoutLoja() {
 
                 return (
                   <div key={item.id} className="flex items-center gap-3 p-2.5 rounded-xl bg-fundo-elevado/60 border border-borda-sutil">
-                    <img
+                    <ImagemOtimizada
                       src={foto}
                       alt={item.produto?.name || 'Produto'}
+                      largura={48}
                       className="w-12 h-12 rounded-lg object-cover bg-fundo-elevado shrink-0"
                     />
                     <div className="min-w-0 flex-1">

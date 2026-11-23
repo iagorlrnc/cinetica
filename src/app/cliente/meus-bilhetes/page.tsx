@@ -1,5 +1,6 @@
 'use client';
 
+import ImagemOtimizada from '@/componentes/ui/ImagemOtimizada';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Gift, Trophy, CalendarDays, RotateCcw, LogIn, Ticket } from 'lucide-react';
@@ -165,7 +166,7 @@ export default function PaginaMeusBilhetes() {
                 >
                   <div className="flex gap-4">
                     {s.imagem_url ? (
-                      <img src={s.imagem_url} alt="" className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border border-borda-sutil shrink-0" />
+                      <ImagemOtimizada src={s.imagem_url} alt="" largura={96} className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border border-borda-sutil shrink-0" />
                     ) : (
                       <span className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-ouro text-azul-950 flex items-center justify-center shrink-0 -rotate-3">
                         <Gift className="w-8 h-8" />

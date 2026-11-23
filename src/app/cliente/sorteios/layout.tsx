@@ -8,7 +8,7 @@ export const metadata: Metadata = {
     title: 'Sorteios & Rifas Oficiais | Atlética Cinética',
     description:
       'Participe dos sorteios e rifas oficiais da Atlética Cinética (A.A.A.F.A. Fisioterapia).',
-    images: ['/cinetica-logo.png'],
+    images: ['/imagens/cinetica-logo-og.jpg'],
   },
 };
 

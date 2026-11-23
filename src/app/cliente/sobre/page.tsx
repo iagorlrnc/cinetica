@@ -129,7 +129,7 @@ export default function PaginaSobre() {
         name: 'Atlética Cinética — A.A.A.F.A. Fisioterapia',
         alternateName: 'Cinética',
         url: baseUrl,
-        logo: `${baseUrl}/cinetica-logo.png`,
+        logo: `${baseUrl}/imagens/cinetica-logo-512.png`,
         taxID: '68.627.894/0001-88',
         description: DESCRICAO,
         address: {

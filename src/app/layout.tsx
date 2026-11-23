@@ -25,18 +25,15 @@ export const metadata: Metadata = {
   description: "Loja oficial e sorteios online da Atlética Cinética (A.A.A.F.A. Fisioterapia) em Palmas/TO. Compre produtos oficiais, concorra a prêmios com pagamento via Pix e garanta ingressos para eventos.",
   keywords: ["cinetica", "atletica", "loja oficial", "produtos", "camisetas", "sorteios", "rifas", "fisioterapia", "aaafa", "palmas", "ingressos"],
   authors: [{ name: "Cinética Fisioterapia" }],
-  icons: {
-    icon: "/cinetica-logo.png",
-    shortcut: "/cinetica-logo.png",
-    apple: "/cinetica-logo.png",
-  },
+  // Ícones da aba vêm de src/app: favicon.ico (16/32/48), icon1.png (32), icon2.png (192) e apple-icon.png (180),
+  // todos gerados a partir de public/LOGOCINETICA.png.
   openGraph: {
     title: "Cinética | Loja Oficial e Sorteios",
     description: "Produtos oficiais da atlética, sorteios online via Pix e ingressos para eventos universitários em Palmas/TO.",
     siteName: "Cinética",
     locale: "pt_BR",
     type: "website",
-    images: ["/cinetica-logo.png"],
+    images: ["/imagens/cinetica-logo-og.jpg"],
   },
 };
 

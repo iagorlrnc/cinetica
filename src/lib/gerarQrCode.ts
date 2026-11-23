@@ -37,7 +37,7 @@ export function gerarHashIngresso(identificadorUnico: string, eventoId: string):
 
 export async function gerarQrCodeDataUrlComLogo(
   textoQr: string,
-  logoUrl: string = '/cinetica-logo.png'
+  logoUrl: string = '/imagens/cinetica-logo-256.webp'
 ): Promise<string> {
   const QRCode = (await import('qrcode')).default;
 

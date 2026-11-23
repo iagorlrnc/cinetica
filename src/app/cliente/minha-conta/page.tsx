@@ -1,5 +1,6 @@
 'use client';
 
+import ImagemOtimizada from '@/componentes/ui/ImagemOtimizada';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
@@ -283,7 +284,7 @@ export default function PaginaMinhaConta() {
           <div className="w-28 h-28 rounded-full p-1 bg-gradient-to-br from-ouro-vivo to-ouro-classico">
             <div className="w-full h-full rounded-full overflow-hidden bg-azul-800 flex items-center justify-center">
               {perfil?.avatar_url ? (
-                <img src={perfil.avatar_url} alt="Sua foto de perfil" className="w-full h-full object-cover" />
+                <ImagemOtimizada src={perfil.avatar_url} alt="Sua foto de perfil" largura={128} prioridade className="w-full h-full object-cover" />
               ) : (
                 <span className="font-titulo font-extrabold text-5xl text-ouro">{nomeExibido[0]?.toUpperCase()}</span>
               )}
@@ -360,7 +361,7 @@ export default function PaginaMinhaConta() {
                 return (
                   <Link key={i.id} href="/meus-ingressos" className="flex items-center gap-3 p-4 hover:bg-fundo-hover transition-colors">
                     <span className="w-11 h-11 rounded-xl bg-fundo-elevado overflow-hidden shrink-0 flex items-center justify-center">
-                      {ev?.imagem_url ? <img src={ev.imagem_url} alt="" className="w-full h-full object-cover" /> : <Ticket size={18} className="text-ouro" />}
+                      {ev?.imagem_url ? <ImagemOtimizada src={ev.imagem_url} alt="" largura={48} className="w-full h-full object-cover" /> : <Ticket size={18} className="text-ouro" />}
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm font-bold text-texto-principal truncate">{ev?.titulo || 'Evento'}</span>

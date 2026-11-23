@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { gerarPdfIngresso } from '@/lib/gerarPdfIngresso';
 import { gerarQrCodeDataUrlComLogo } from '@/lib/gerarQrCode';
+import ImagemOtimizada from '@/componentes/ui/ImagemOtimizada';
 
 interface IngressoCompleto extends Ingresso {
   evento: Evento & {
@@ -360,7 +361,7 @@ function ConteudoMeusIngressos() {
   async function abrirDetalhesEQrCode(ingresso: IngressoCompleto) {
     setIngressoSelecionado(ingresso);
     try {
-      const url = await gerarQrCodeDataUrlComLogo(ingresso.qr_code_hash, '/cinetica-logo.png');
+      const url = await gerarQrCodeDataUrlComLogo(ingresso.qr_code_hash);
       setQrCodeUrl(url);
     } catch (err) {
       console.error('Erro ao gerar QR code:', err);
@@ -374,7 +375,7 @@ function ConteudoMeusIngressos() {
       // Garante que o QR code esteja gerado para inclusão no PDF
       let qrCode = qrCodeUrl;
       if (ingressoSelecionado?.id !== ingresso.id || !qrCode) {
-        qrCode = await gerarQrCodeDataUrlComLogo(ingresso.qr_code_hash, '/cinetica-logo.png');
+        qrCode = await gerarQrCodeDataUrlComLogo(ingresso.qr_code_hash);
       }
 
       await gerarPdfIngresso(
@@ -661,9 +662,11 @@ function ConteudoMeusIngressos() {
                     {/* Imagem do Banner / Lateral */}
                     <div className="relative md:w-48 h-36 md:h-auto bg-fundo-subtil flex-shrink-0 overflow-hidden">
                       {ingresso.evento?.imagem_url ? (
-                        <img 
-                          src={ingresso.evento.imagem_url} 
+                        <ImagemOtimizada
+                          src={ingresso.evento.imagem_url}
                           alt={ingresso.evento.titulo}
+                          largura={384}
+                          altura={256}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />
                       ) : (

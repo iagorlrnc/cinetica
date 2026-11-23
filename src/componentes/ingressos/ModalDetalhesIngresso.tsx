@@ -1,5 +1,6 @@
 'use client';
 
+import ImagemOtimizada from '@/componentes/ui/ImagemOtimizada';
 import { useState, useEffect, useRef } from 'react';
 import { 
   Ticket, 
@@ -105,9 +106,11 @@ export default function ModalDetalhesIngresso({
         <div className="relative shrink-0 overflow-hidden bg-slate-900 min-h-[160px] sm:min-h-[190px]">
           {ingresso.evento?.imagem_url ? (
             <div className="absolute inset-0">
-              <img
+              <ImagemOtimizada
                 src={ingresso.evento.imagem_url}
                 alt={ingresso.evento.titulo}
+                largura={640}
+                altura={256}
                 className="w-full h-full object-cover filter brightness-[0.75]"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-azul-950 via-azul-950/60 to-black/30" />
@@ -122,9 +125,10 @@ export default function ModalDetalhesIngresso({
             {atletica ? (
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/70 backdrop-blur-md border border-white/15 text-xs font-semibold text-white shadow-lg">
                 {atletica.logo_url ? (
-                  <img
+                  <ImagemOtimizada
                     src={atletica.logo_url}
                     alt={atletica.nome}
+                    largura={32}
                     className="w-5 h-5 rounded-full object-cover"
                   />
                 ) : (

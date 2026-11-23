@@ -1,5 +1,6 @@
 'use client';
 
+import ImagemOtimizada from '@/componentes/ui/ImagemOtimizada';
 import Link from 'next/link';
 import { MapPin, ArrowUpRight, Ticket } from 'lucide-react';
 import { cn, formatarHora, formatarMoeda } from '@/lib/utilitarios';
@@ -63,11 +64,11 @@ export default function CardEvento({ evento, agora, destaque = false, className 
       )}
     >
       {evento.imagem_url ? (
-        <img
+        <ImagemOtimizada
           src={evento.imagem_url}
           alt=""
-          loading="lazy"
-          decoding="async"
+          largura={384}
+          altura={480}
           className={cn(
             'absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.06]',
             inativo && 'grayscale opacity-60'

@@ -1,5 +1,6 @@
 'use client';
 
+import ImagemOtimizada from '@/componentes/ui/ImagemOtimizada';
 import { useState, useEffect, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -384,7 +385,7 @@ function ComponenteDetalheEvento({ eventoInicial }: ConteudoDetalheEventoProps) 
       <section className="relative overflow-hidden fundo-granulado">
         <div className="absolute inset-0 -z-0" aria-hidden="true">
           {evento.imagem_url ? (
-            <img src={evento.imagem_url} alt="" className="w-full h-full object-cover blur-2xl scale-125 opacity-40" />
+            <ImagemOtimizada src={evento.imagem_url} alt="" largura={64} altura={80} comPlaceholder={false} prioridade className="w-full h-full object-cover blur-2xl scale-125 opacity-40" />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-azul-700 to-azul-950" />
           )}
@@ -402,7 +403,7 @@ function ComponenteDetalheEvento({ eventoInicial }: ConteudoDetalheEventoProps) 
             <div className="relative max-w-sm md:max-w-none">
               <div className="aspect-[4/5] rounded-[1.75rem] overflow-hidden border border-borda-media shadow-[0_40px_80px_-30px_rgba(0,0,0,0.8)] rotate-[-2deg] bg-fundo-elevado">
                 {evento.imagem_url ? (
-                  <img src={evento.imagem_url} alt={evento.titulo} fetchPriority="high" decoding="async" className="w-full h-full object-cover" />
+                  <ImagemOtimizada src={evento.imagem_url} alt={evento.titulo} largura={384} altura={480} prioridade qualidade={75} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full fundo-pontos flex items-center justify-center">
                     <Ticket className="w-20 h-20 text-ouro/40 -rotate-12" />
@@ -555,7 +556,7 @@ function ComponenteDetalheEvento({ eventoInicial }: ConteudoDetalheEventoProps) 
           {evento.atletica?.nome && (
             <section className="flex items-center gap-4 p-5 rounded-3xl bg-fundo-card border border-borda-sutil">
               {evento.atletica.logo_url ? (
-                <img src={evento.atletica.logo_url} alt="" className="w-14 h-14 rounded-2xl object-cover border border-borda-sutil" />
+                <ImagemOtimizada src={evento.atletica.logo_url} alt="" largura={64} className="w-14 h-14 rounded-2xl object-cover border border-borda-sutil" />
               ) : (
                 <span className="w-14 h-14 rounded-2xl bg-ouro text-azul-950 flex items-center justify-center font-titulo font-extrabold text-2xl">
                   {evento.atletica.nome[0]}

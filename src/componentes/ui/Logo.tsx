@@ -38,16 +38,18 @@ export default function Logo({
     <div className={cn('flex items-center gap-3 group shrink-0', className)}>
       <div
         className={cn(
-          'relative rounded-full bg-azul-950 overflow-hidden shrink-0 shadow-[0_6px_18px_-6px_rgba(0,0,0,0.8)] transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-105',
+          'relative shrink-0 transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-105',
           dimensoes.caixa
         )}
       >
+        {/* Logo sem fundo já otimizada (WebP ~8 KB): servida direto, sem passar pelo otimizador */}
         <Image
-          src="/cinetica-logo.png"
+          src="/imagens/cinetica-logo-128.webp"
           alt="Atlética Cinética"
           width={dimensoes.w}
           height={dimensoes.h}
-          className="w-full h-full object-cover scale-[1.12]"
+          unoptimized
+          className="w-full h-full object-contain drop-shadow-[0_4px_10px_rgba(0,0,0,0.55)]"
           priority
         />
       </div>

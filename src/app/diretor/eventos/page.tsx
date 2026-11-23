@@ -1,5 +1,6 @@
 'use client';
 
+import ImagemOtimizada from '@/componentes/ui/ImagemOtimizada';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import Cartao from '@/componentes/ui/Cartao';
@@ -299,7 +300,7 @@ export default function PaginaEventosDiretor() {
               <Cartao key={e.id} variante="vidro" className="flex flex-col xl:flex-row xl:items-center gap-4">
                 <div className="flex items-start gap-4 flex-1 min-w-0">
                   {e.imagem_url ? (
-                    <img src={e.imagem_url} alt="" className="w-16 h-16 rounded-xl object-cover border border-borda-sutil shrink-0" />
+                    <ImagemOtimizada src={e.imagem_url} alt="" largura={64} className="w-16 h-16 rounded-xl object-cover border border-borda-sutil shrink-0" />
                   ) : (
                     <div className="w-16 h-16 rounded-xl bg-primaria-500/10 text-primaria-400 flex items-center justify-center shrink-0 border border-primaria-500/20">
                       <Ticket size={24} />

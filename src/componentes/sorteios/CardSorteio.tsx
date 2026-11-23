@@ -1,5 +1,6 @@
 'use client';
 
+import ImagemOtimizada from '@/componentes/ui/ImagemOtimizada';
 import { Gift, Trophy, Clock, CalendarDays } from 'lucide-react';
 import { cn, formatarDataHora, formatarMoeda } from '@/lib/utilitarios';
 import {
@@ -53,10 +54,10 @@ export default function CardSorteio({ sorteio: s, agora, aoParticipar, aoVerRegu
 
         <div className="flex gap-4 sm:gap-5">
           {s.imagem_url ? (
-            <img
+            <ImagemOtimizada
               src={s.imagem_url}
               alt=""
-              loading="lazy"
+              largura={128}
               className={cn('rounded-2xl object-cover border border-borda-sutil shrink-0', compacto ? 'w-20 h-20' : 'w-24 h-24 sm:w-32 sm:h-32')}
             />
           ) : (

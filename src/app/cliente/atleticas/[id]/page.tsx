@@ -1,5 +1,6 @@
 'use client';
 
+import ImagemOtimizada from '@/componentes/ui/ImagemOtimizada';
 import React, { useState, useEffect, use, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -294,9 +295,11 @@ function ConteudoPerfilAtletica({
               <div className="flex items-end gap-4">
                 <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl sm:rounded-3xl bg-fundo-card p-1.5 border-4 border-white shadow-2xl overflow-hidden shrink-0">
                   {atletica.logo_url ? (
-                    <img
+                    <ImagemOtimizada
                       src={atletica.logo_url}
                       alt={atletica.nome}
+                      largura={128}
+                      prioridade
                       className="w-full h-full object-cover rounded-xl sm:rounded-2xl"
                     />
                   ) : (
@@ -479,9 +482,11 @@ function ConteudoPerfilAtletica({
                       {/* Imagem do Evento */}
                       <div className="aspect-[16/9] w-full relative overflow-hidden bg-fundo-elevado">
                         {evento.imagem_url ? (
-                          <img
+                          <ImagemOtimizada
                             src={evento.imagem_url}
                             alt={evento.titulo}
+                            largura={384}
+                            altura={216}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           />
                         ) : (

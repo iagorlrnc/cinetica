@@ -1,5 +1,6 @@
 'use client';
 
+import ImagemOtimizada from '@/componentes/ui/ImagemOtimizada';
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -17,6 +18,11 @@ interface Props {
 }
 
 const doisDigitos = (n: number) => n.toString().padStart(2, '0');
+
+// Mãos do banner: WebP em duas larguras (antes eram PNGs de 1–1,5 MB).
+const SRCSET_MAO_ABERTA = '/imagens/mao-inicio-640.webp 640w, /imagens/mao-inicio-1000.webp 1000w';
+const SRCSET_MAO_FECHADA = '/imagens/mao-fechada-640.webp 640w, /imagens/mao-fechada-1000.webp 1000w';
+const SIZES_MAO = '(min-width: 1536px) 600px, (min-width: 1280px) 540px, (min-width: 640px) 480px, 340px';
 
 /**
  * Etiqueta de preço (tag de loja): corpo amarelo com borda tracejada e furo,
@@ -205,7 +211,7 @@ export default function HeroProdutos({ produtos, carregando }: Props) {
           <div className="absolute inset-0 z-0 overflow-hidden bg-azul-900" aria-hidden="true">
             <div className={cn('absolute inset-0 transition-opacity duration-300', fechando ? 'opacity-20' : 'opacity-100')}>
               {produto.images?.[0] ? (
-                <img src={produto.images[0]} alt="" className="w-full h-full object-cover brightness-75 scale-110 blur-[2px]" />
+                <ImagemOtimizada src={produto.images[0]} alt="" largura={640} altura={360} comPlaceholder={false} className="w-full h-full object-cover brightness-75 scale-110 blur-[2px]" />
               ) : (
                 <div className="w-full h-full bg-gradient-to-r from-ouro-classico to-azul-800" />
               )}
@@ -345,7 +351,7 @@ export default function HeroProdutos({ produtos, carregando }: Props) {
                 >
                   <div className="w-full h-full border-2 sm:border-4 border-white shadow-2xl overflow-hidden bg-azul-950 flex items-center justify-center">
                     {produto.images?.[0] ? (
-                      <img src={produto.images[0]} alt={produto.name} className="w-full h-full object-cover" />
+                      <ImagemOtimizada src={produto.images[0]} alt={produto.name} largura={384} prioridade qualidade={75} className="w-full h-full object-cover" />
                     ) : (
                       <ShoppingBag size={28} className="text-ouro" />
                     )}
@@ -354,8 +360,14 @@ export default function HeroProdutos({ produtos, carregando }: Props) {
 
                 {/* Mão aberta */}
                 <img
-                  src="/MAO-INICIO.png"
+                  src="/imagens/mao-inicio-1000.webp"
+                  srcSet={SRCSET_MAO_ABERTA}
+                  sizes={SIZES_MAO}
+                  width={1000}
+                  height={1000}
                   alt="Mão da Cinética segurando o produto"
+                  fetchPriority="high"
+                  decoding="async"
                   draggable={false}
                   className={cn(
                     'absolute inset-0 w-full h-full object-contain object-bottom pointer-events-none z-10 drop-shadow-[0_20px_35px_rgba(0,0,0,0.7)] transition-opacity duration-300',
@@ -364,9 +376,15 @@ export default function HeroProdutos({ produtos, carregando }: Props) {
                 />
                 {/* Mão fechada */}
                 <img
-                  src="/MAO-FECHADA.png"
+                  src="/imagens/mao-fechada-1000.webp"
+                  srcSet={SRCSET_MAO_FECHADA}
+                  sizes={SIZES_MAO}
+                  width={1000}
+                  height={1027}
                   alt=""
                   aria-hidden="true"
+                  fetchPriority="low"
+                  decoding="async"
                   draggable={false}
                   className={cn(
                     'absolute inset-0 w-full h-full object-contain object-bottom pointer-events-none z-20 drop-shadow-[0_20px_35px_rgba(0,0,0,0.85)] transition-opacity duration-300',
@@ -387,8 +405,16 @@ export default function HeroProdutos({ produtos, carregando }: Props) {
       ) : (
         // Sem produtos cadastrados: mantém a identidade com a logo
         <div className="flex-1 flex flex-col items-center justify-center gap-6 pt-40 pb-20 px-4 text-center">
-          <div className="relative w-48 h-48 sm:w-64 sm:h-64 rounded-full overflow-hidden ring-4 ring-ouro shadow-[0_0_80px_-10px_rgba(242,193,78,0.5)] animar-flutuar">
-            <Image src="/cinetica-logo.png" alt="Atlética Cinética" fill sizes="256px" className="object-cover" priority />
+          <div className="relative w-48 h-48 sm:w-64 sm:h-64 animar-flutuar">
+            <Image
+              src="/imagens/cinetica-logo-512.webp"
+              alt="Atlética Cinética"
+              fill
+              sizes="256px"
+              unoptimized
+              className="object-contain drop-shadow-[0_0_40px_rgba(242,193,78,0.35)]"
+              priority
+            />
           </div>
           <Link href="/eventos" className="botao-pop h-14 px-8 text-lg">
             Ver eventos

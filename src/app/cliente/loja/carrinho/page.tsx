@@ -1,5 +1,6 @@
 'use client';
 
+import ImagemOtimizada from '@/componentes/ui/ImagemOtimizada';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { usarCarrinho } from '@/contextos/ContextoCarrinho';
@@ -76,7 +77,7 @@ export default function PaginaCarrinho() {
                   className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-fundo-elevado overflow-hidden shrink-0 flex items-center justify-center"
                 >
                   {foto ? (
-                    <img src={foto} alt={item.produto?.name || 'Produto'} className="w-full h-full object-cover" />
+                    <ImagemOtimizada src={foto} alt={item.produto?.name || 'Produto'} largura={128} className="w-full h-full object-cover" />
                   ) : (
                     <Package className="text-ouro/50" size={32} />
                   )}

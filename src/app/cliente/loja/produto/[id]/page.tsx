@@ -1,5 +1,6 @@
 'use client';
 
+import ImagemOtimizada from '@/componentes/ui/ImagemOtimizada';
 import React, { useState, useEffect, use, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -151,9 +152,13 @@ function ConteudoDetalhesProduto({
             <div className="lg:sticky lg:top-28 space-y-4">
               <div className="relative aspect-square rounded-[2rem] bg-fundo-card border border-borda-sutil overflow-hidden">
                 {imagemSelecionada ? (
-                  <img
+                  <ImagemOtimizada
+                    key={imagemSelecionada}
                     src={imagemSelecionada}
                     alt={produto.name}
+                    largura={640}
+                    prioridade
+                    qualidade={75}
                     className={`w-full h-full object-cover ${esgotado ? 'grayscale opacity-50' : ''}`}
                   />
                 ) : (
@@ -184,7 +189,7 @@ function ConteudoDetalhesProduto({
                         imagemSelecionada === img ? 'border-ouro -rotate-3' : 'border-borda-sutil opacity-60 hover:opacity-100'
                       }`}
                     >
-                      <img src={img} alt="" className="w-full h-full object-cover" />
+                      <ImagemOtimizada src={img} alt="" largura={96} className="w-full h-full object-cover" />
                     </button>
                   ))}
                 </div>

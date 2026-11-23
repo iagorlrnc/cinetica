@@ -1,5 +1,6 @@
 'use client';
 
+import ImagemOtimizada from '@/componentes/ui/ImagemOtimizada';
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { ShoppingBag, Plus, Check } from 'lucide-react';
@@ -53,10 +54,11 @@ export default function CardProduto({ produto }: PropsCardProduto) {
         className="relative block aspect-[4/5] overflow-hidden rounded-[1.5rem] sm:rounded-[1.75rem] bg-fundo-elevado border border-borda-sutil transition-all duration-300 group-hover:border-ouro/60 group-hover:-translate-y-1 group-hover:shadow-[0_24px_50px_-24px_rgba(242,193,78,0.45)]"
       >
         {produto.images?.[0] ? (
-          <img
+          <ImagemOtimizada
             src={produto.images[0]}
             alt={produto.name}
-            loading="lazy"
+            largura={384}
+            altura={480}
             className={cn(
               'w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.07]',
               esgotado && 'grayscale opacity-50'

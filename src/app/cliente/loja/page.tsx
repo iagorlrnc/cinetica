@@ -1,5 +1,6 @@
 'use client';
 
+import ImagemOtimizada from '@/componentes/ui/ImagemOtimizada';
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { criarClienteNavegador } from '@/lib/supabase/cliente';
@@ -435,7 +436,7 @@ function ConteudoLoja() {
                           <div className="flex items-center gap-2 truncate">
                             <div className="w-5 h-5 rounded-md bg-fundo-card border border-borda-sutil overflow-hidden shrink-0 flex items-center justify-center text-[10px] font-black">
                               {atl.logo_url ? (
-                                <img src={atl.logo_url} alt={atl.nome} className="w-full h-full object-cover" />
+                                <ImagemOtimizada src={atl.logo_url} alt={atl.nome} largura={32} comPlaceholder={false} className="w-full h-full object-cover" />
                               ) : (
                                 atl.nome[0]
                               )}

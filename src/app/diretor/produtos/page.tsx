@@ -1,5 +1,6 @@
 'use client';
 
+import ImagemOtimizada from '@/componentes/ui/ImagemOtimizada';
 import React, { useState, useEffect } from 'react';
 import { criarClienteNavegador } from '@/lib/supabase/cliente';
 import { usarAutenticacao } from '@/contextos/ContextoAutenticacao';
@@ -497,7 +498,7 @@ export default function PaginaProdutosDiretor() {
                 {/* Imagem e Dados */}
                 <div className="flex items-center gap-4 min-w-0 flex-1">
                   <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-fundo-input border border-borda-sutil overflow-hidden shrink-0">
-                    <img src={foto} alt={prod.name} className="w-full h-full object-cover" />
+                    <ImagemOtimizada src={foto} alt={prod.name} largura={96} className="w-full h-full object-cover" />
                   </div>
 
                   <div className="min-w-0 space-y-1">

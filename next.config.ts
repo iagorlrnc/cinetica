@@ -6,6 +6,14 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ['lucide-react'],
   },
   images: {
+    // WebP é suportado por todos os navegadores atuais e codifica rápido no 1º acesso.
+    formats: ['image/webp'],
+    // Poucas larguras/qualidades = menos variações geradas e mais acertos de cache.
+    deviceSizes: [640, 828, 1080, 1200, 1920],
+    imageSizes: [32, 48, 64, 96, 128, 256, 384],
+    qualities: [60, 75],
+    // Uploads usam nomes únicos, então a versão otimizada pode ficar em cache por 31 dias.
+    minimumCacheTTL: 2678400,
     remotePatterns: [
       {
         protocol: 'https',
@@ -68,6 +76,11 @@ const nextConfig: NextConfig = {
             value: 'none',
           },
         ],
+      },
+      {
+        // Imagens estáticas do site (public/imagens): cache no navegador/CDN por 7 dias.
+        source: '/imagens/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=604800, stale-while-revalidate=86400' }],
       },
       {
         // Respostas de API carregam dados pessoais/financeiros: nunca cachear em proxies/CDN

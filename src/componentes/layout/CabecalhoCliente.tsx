@@ -1,5 +1,6 @@
 'use client';
 
+import ImagemOtimizada from '@/componentes/ui/ImagemOtimizada';
 import { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -166,7 +167,7 @@ function ConteudoCabecalhoCliente() {
                   >
                     <span className="w-9 h-9 rounded-full overflow-hidden bg-gradient-to-br from-ouro-vivo to-ouro-classico flex items-center justify-center text-sm font-black text-azul-950 font-titulo">
                       {perfil?.avatar_url ? (
-                        <img src={perfil.avatar_url} alt="" className="w-full h-full object-cover" />
+                        <ImagemOtimizada src={perfil.avatar_url} alt="" largura={48} comPlaceholder={false} className="w-full h-full object-cover" />
                       ) : (
                         primeiroNome?.[0]?.toUpperCase() || 'U'
                       )}

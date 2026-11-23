@@ -1,5 +1,6 @@
 'use client';
 
+import ImagemOtimizada from '@/componentes/ui/ImagemOtimizada';
 import { useState, useEffect, Suspense } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -157,9 +158,11 @@ function ConteudoCheckout() {
               {/* Banner do Evento acima do título */}
               {evento.imagem_url ? (
                 <div className="relative w-full h-36 sm:h-52 overflow-hidden border-b border-borda-sutil">
-                  <img
+                  <ImagemOtimizada
                     src={evento.imagem_url}
                     alt={evento.titulo}
+                    largura={640}
+                    altura={208}
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-fundo-card via-fundo-card/30 to-transparent" />
