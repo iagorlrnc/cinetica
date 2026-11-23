@@ -36,10 +36,10 @@ const Cartao = memo(
         <div
           ref={ref}
           className={cn(
-            'rounded-lg transition-all duration-300 overflow-hidden',
+            'rounded-3xl transition-all duration-300 overflow-hidden',
             estilosVariante[variante],
             !semPadding && 'p-6',
-            interativo && 'cursor-pointer hover:border-[#c59941]/60 hover:shadow-card hover:-translate-y-1',
+            interativo && 'cursor-pointer hover:border-ouro/60 hover:shadow-card hover:-translate-y-1',
             className
           )}
           {...props}

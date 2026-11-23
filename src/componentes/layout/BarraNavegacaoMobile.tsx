@@ -1,166 +1,65 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { criarClienteNavegador } from '@/lib/supabase/cliente';
-import {
-  Home,
-  Calendar,
-  Ticket,
-  Search,
-  MapPin,
-  ShoppingCart,
-} from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { Home, CalendarDays, Gift, ShoppingBag, UserRound } from 'lucide-react';
 import { usarCarrinho } from '@/contextos/ContextoCarrinho';
+import { cn } from '@/lib/utilitarios';
 
-import { obterCidadesCache, obterOuBuscarCidades } from '@/lib/cacheEventos';
-import { normalizarListaCidades } from '@/lib/utilitarios';
-
-function ConteudoBarraNavegacaoMobile() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+/**
+ * Barra de abas inferior (estilo app) para celular.
+ */
+export default function BarraNavegacaoMobile() {
+  const pathname = usePathname() || '/';
   const { totalItens } = usarCarrinho();
 
-  const [termoBusca, setTermoBusca] = useState(searchParams.get('busca') || '');
-  const [cidadeSelecionada, setCidadeSelecionada] = useState(searchParams.get('cidade') || '');
-  const [cidades, setCidades] = useState<string[]>(() => normalizarListaCidades(obterCidadesCache() || []));
-  const supabase = criarClienteNavegador();
+  const em = (rota: string) => pathname.startsWith(rota) || pathname.startsWith(`/cliente${rota}`);
+  // Páginas da conta (ingressos, bilhetes, pedidos) acendem a aba "Conta"
+  const naConta = ['/minha-conta', '/meus-ingressos', '/meus-bilhetes', '/loja/meus-pedidos'].some(em);
+  const ativo = (rota: string) =>
+    rota === '/'
+      ? pathname === '/' || pathname === '/cliente'
+      : rota === '/minha-conta'
+        ? naConta
+        : em(rota) && !naConta;
 
-  useEffect(() => {
-    setTermoBusca(searchParams.get('busca') || '');
-    setCidadeSelecionada(searchParams.get('cidade') || '');
-  }, [searchParams]);
-
-  useEffect(() => {
-    async function carregarCidades() {
-      const lista = await obterOuBuscarCidades(supabase);
-      if (lista && lista.length > 0) {
-        setCidades(normalizarListaCidades(lista));
-      }
-    }
-    carregarCidades();
-    const interval = setInterval(() => {
-      const c = obterCidadesCache();
-      if (c && c.length > 0) setCidades(normalizarListaCidades(c));
-    }, 2000);
-    return () => clearInterval(interval);
-  }, [supabase]);
-
-  function navegarComFiltros(buscaVal: string, cidadeVal: string) {
-    const params = new URLSearchParams();
-    if (buscaVal.trim()) params.set('busca', buscaVal.trim());
-    if (cidadeVal) params.set('cidade', cidadeVal);
-    const queryString = params.toString();
-    const rotaBase = pathname.includes('/sorteios')
-      ? '/sorteios'
-      : pathname.includes('/loja')
-      ? '/loja'
-      : '/eventos';
-    router.push(`${rotaBase}${queryString ? `?${queryString}` : ''}`);
-  }
-
-  const ehInicio = pathname === '/' || pathname === '/cliente';
-  const ehEventos = pathname.startsWith('/eventos') || pathname.startsWith('/cliente/eventos');
-  const ehSorteios = pathname.startsWith('/sorteios') || pathname.startsWith('/cliente/sorteios');
-  const ehLoja = pathname.startsWith('/loja') || pathname.startsWith('/cliente/loja');
-  const ehMeusIngressos = pathname.startsWith('/meus-ingressos') || pathname.startsWith('/cliente/meus-ingressos');
-
-  const ocultarBarraPesquisa = ehMeusIngressos || ehLoja;
-
-  const botoes = [
-    { rotulo: 'Eventos', rotuloCurto: 'Eventos', href: '/eventos', icone: Calendar, ativo: ehEventos },
-    { rotulo: 'Sorteios', rotuloCurto: 'Sorteios', href: '/sorteios', icone: Ticket, ativo: ehSorteios },
-    { rotulo: 'Loja', rotuloCurto: 'Loja', href: '/loja', icone: ShoppingCart, ativo: ehLoja },
-    { rotulo: 'Ingressos', rotuloCurto: 'Ingressos', href: '/meus-ingressos', icone: Ticket, ativo: ehMeusIngressos },
+  const abas = [
+    { rotulo: 'Início', href: '/', icone: Home },
+    { rotulo: 'Loja', href: '/loja', icone: ShoppingBag, contador: totalItens },
+    { rotulo: 'Sorteios', href: '/sorteios', icone: Gift },
+    { rotulo: 'Eventos', href: '/eventos', icone: CalendarDays },
+    { rotulo: 'Conta', href: '/minha-conta', icone: UserRound },
   ];
 
   return (
-    <nav className="lg:hidden bg-white border-b border-slate-200 p-2.5 shadow-xs sticky top-14 z-30">
-      <div className="max-w-7xl mx-auto space-y-2">
-        {/* Links Principais de Navegação Móbile (4 Colunas) */}
-        <div className={`grid grid-cols-4 gap-1 w-full ${!ocultarBarraPesquisa ? 'border-b border-slate-200 pb-2' : ''}`}>
-          {botoes.map((item) => {
-            const Icone = item.icone;
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`relative py-2 px-1 rounded-lg text-[10px] sm:text-[11px] font-black uppercase tracking-tight flex items-center justify-center gap-1 transition-all min-h-[38px] text-center ${
-                  item.ativo
-                    ? 'bg-gradient-to-r from-[#c59941] to-[#b8872f] text-white font-black shadow-sm'
-                    : 'bg-slate-100 text-slate-700 hover:text-slate-950 border border-slate-200/60'
-                }`}
-              >
-                <Icone size={13} className="shrink-0" />
-                <span className="truncate">
-                  <span>{item.rotuloCurto}</span>
+    <nav
+      aria-label="Navegação principal"
+      className="lg:hidden fixed bottom-0 inset-x-0 z-40 px-3 pb-[max(env(safe-area-inset-bottom),10px)] pt-2 pointer-events-none"
+    >
+      <div className="pointer-events-auto mx-auto max-w-md grid grid-cols-5 gap-1 rounded-[1.75rem] bg-azul-900/90 backdrop-blur-xl border border-borda-media p-1.5 shadow-[0_18px_40px_-12px_rgba(0,0,0,0.8)]">
+        {abas.map(({ rotulo, href, icone: Icone, contador }) => {
+          const estaAtivo = ativo(href);
+          return (
+            <Link
+              key={href}
+              href={href}
+              aria-current={estaAtivo ? 'page' : undefined}
+              className={cn(
+                'relative flex flex-col items-center justify-center gap-0.5 rounded-[1.25rem] py-2 text-[10px] font-bold transition-all',
+                estaAtivo ? 'bg-ouro text-azul-950' : 'text-texto-secundario hover:text-texto-principal'
+              )}
+            >
+              <Icone size={20} strokeWidth={estaAtivo ? 2.6 : 2} />
+              <span className="leading-none">{rotulo}</span>
+              {Boolean(contador) && (
+                <span className="absolute top-1 right-[18%] min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center">
+                  {contador}
                 </span>
-              </Link>
-            );
-          })}
-        </div>
-
-
-        {/* Barra de Pesquisa e Filtro de Cidade (Oculta na Loja Oficial e Meus Ingressos) */}
-        {!ocultarBarraPesquisa && (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              navegarComFiltros(termoBusca, cidadeSelecionada);
-            }}
-            className="flex items-center bg-slate-100 border border-slate-200 rounded-lg overflow-hidden focus-within:border-[#c59941]"
-          >
-            <div className="flex items-center pl-3 text-slate-400">
-              <Search size={15} />
-            </div>
-            <input
-              type="text"
-              placeholder={pathname.includes('/loja') ? "Buscar produtos da Cinética..." : "Buscar eventos, sorteios..."}
-              value={termoBusca}
-              onChange={(e) => {
-                const val = e.target.value;
-                setTermoBusca(val);
-                if (pathname.includes('/eventos') || pathname.includes('/sorteios') || pathname.includes('/loja')) {
-                  navegarComFiltros(val, cidadeSelecionada);
-                }
-              }}
-              style={{ outline: 'none', boxShadow: 'none' }}
-              className="w-full bg-transparent px-2.5 py-2 text-xs text-slate-900 placeholder-slate-400 outline-none focus:outline-none focus:ring-0 focus-visible:outline-none border-none shadow-none"
-            />
-            <div className="flex items-center border-l border-slate-200 px-2 py-2 text-xs font-bold uppercase text-[#9a7228] gap-1 bg-slate-200/50 shrink-0">
-              <MapPin size={13} className="text-[#c59941] shrink-0" />
-              <select
-                value={cidadeSelecionada}
-                onChange={(e) => {
-                  const novaCidade = e.target.value;
-                  setCidadeSelecionada(novaCidade);
-                  navegarComFiltros(termoBusca, novaCidade);
-                }}
-                style={{ outline: 'none', boxShadow: 'none' }}
-                className="bg-transparent text-[11px] font-bold uppercase text-slate-800 cursor-pointer outline-none focus:outline-none focus:ring-0 focus-visible:outline-none border-none shadow-none"
-              >
-                <option value="" className="bg-white text-slate-800">Todas</option>
-                {cidades.map((c) => (
-                  <option key={c} value={c} className="bg-white text-slate-800">
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </form>
-        )}
+              )}
+            </Link>
+          );
+        })}
       </div>
     </nav>
-  );
-}
-
-export default function BarraNavegacaoMobile() {
-  return (
-    <Suspense fallback={null}>
-      <ConteudoBarraNavegacaoMobile />
-    </Suspense>
   );
 }

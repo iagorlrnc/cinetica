@@ -11,26 +11,25 @@ import { TAXA_SERVICO_PERCENTUAL, TAXA_SERVICO_LABEL } from '@/lib/constantes';
 import { usarAutenticacao } from '@/contextos/ContextoAutenticacao';
 import { obterEventoCache, salvarEventoCache, type EventoCompleto } from '@/lib/cacheEventos';
 import type { LoteIngresso } from '@/tipos';
+import { eventoJaPassou, partesData, rotuloContagem } from '@/lib/eventos';
 import {
+  ArrowLeft,
   Calendar,
   MapPin,
   Ticket,
-  Users,
-  ShoppingCart,
   Minus,
   Plus,
   Clock,
   Info,
   ShieldCheck,
-  Map,
   CheckCircle,
   AlertTriangle,
-  Flame,
   XCircle,
   Share2,
   Check,
   ExternalLink,
   MapPinOff,
+  QrCode,
 } from 'lucide-react';
 import MapView from '@/componentes/mapa/MapView';
 
@@ -58,11 +57,10 @@ function ComponenteDetalheEvento({ eventoInicial }: ConteudoDetalheEventoProps) 
     return null;
   });
   const [quantidade, setQuantidade] = useState(1);
-  const [abaAtiva, setAbaAtiva] = useState<'sobre' | 'lotes' | 'mapa' | 'regras'>('sobre');
   const [bannerCancelamento, setBannerCancelamento] = useState(false);
   const [copiado, setCopiado] = useState(false);
 
-  const supabase = criarClienteNavegador();
+  const [supabase] = useState(() => criarClienteNavegador());
 
   async function buscarEvento() {
     if (!eventoId) return;
@@ -138,8 +136,8 @@ function ComponenteDetalheEvento({ eventoInicial }: ConteudoDetalheEventoProps) 
   async function aoCompartilhar() {
     if (!evento) return;
     const url = window.location.href;
-    const titulo = `${evento.titulo} | meuingrss`;
-    const texto = `Confira ${evento.titulo} no meuingrss e garanta seu ingresso!`;
+    const titulo = `${evento.titulo} | Cinética`;
+    const texto = `Confira ${evento.titulo} na Cinética e garanta seu ingresso!`;
 
     if (navigator.share) {
       try {
@@ -187,21 +185,23 @@ function ComponenteDetalheEvento({ eventoInicial }: ConteudoDetalheEventoProps) 
 
   if (carregando) {
     return (
-      <div className="min-h-screen bg-[#fafafa] flex items-center justify-center pt-20">
-        <Carregando tamanho="lg" texto="Carregando detalhes do evento..." />
+      <div className="min-h-[70vh] flex items-center justify-center">
+        <Carregando tamanho="lg" texto="Carregando o evento..." />
       </div>
     );
   }
 
   if (!evento) {
     return (
-      <div className="min-h-screen bg-[#fafafa] flex items-center justify-center pt-20 text-slate-900">
-        <div className="text-center max-w-md p-8 bg-white rounded-xl border border-slate-200 shadow-sm">
-          <Ticket className="w-16 h-16 text-[#c59941] mx-auto mb-4" />
-          <h2 className="text-2xl font-black font-titulo uppercase mb-2">Evento não encontrado</h2>
-          <p className="text-xs text-slate-500 mb-6">O evento solicitado não está disponível ou foi encerrado.</p>
-          <Link href="/eventos">
-            <Botao variante="festiva">Voltar aos Eventos</Botao>
+      <div className="min-h-[70vh] flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <span className="w-20 h-20 rounded-3xl bg-ouro text-azul-950 flex items-center justify-center mx-auto mb-6 -rotate-6">
+            <Ticket className="w-10 h-10" />
+          </span>
+          <h1 className="titulo-display text-5xl text-texto-principal mb-3">Evento não encontrado</h1>
+          <p className="text-texto-secundario mb-8">Esse evento não está disponível ou o link está errado.</p>
+          <Link href="/eventos" className="botao-pop h-14 px-8 text-base">
+            Ver eventos
           </Link>
         </div>
       </div>
@@ -217,51 +217,162 @@ function ComponenteDetalheEvento({ eventoInicial }: ConteudoDetalheEventoProps) 
   const statusEvento = evento?.status;
   const ehPublicado = statusEvento === 'publicado';
   const ehCancelado = statusEvento === 'cancelado';
-  const ehEncerrado = statusEvento === 'encerrado' || (evento?.data_evento ? new Date(evento.data_evento) < new Date() : false);
+  const ehEncerrado = statusEvento === 'encerrado' || (evento ? eventoJaPassou(evento) : false);
   const podeComprar = ehPublicado && !ehCancelado && !ehEncerrado;
 
-  const textoBotaoDesktop = ehCancelado
-    ? 'CANCELADO'
-    : ehEncerrado
-    ? 'ENCERRADO'
-    : !ehPublicado
-    ? (statusEvento ? statusEvento.toUpperCase() : 'NÃO PUBLICADO')
-    : usuario
-    ? 'COMPRAR INGRESSO'
-    : 'ENTRAR PARA COMPRAR';
+  const data = partesData(evento.data_evento);
+  const contagem = podeComprar ? rotuloContagem(evento.data_evento) : null;
 
-  const textoBotaoMobile = ehCancelado
-    ? 'CANCELADO'
-    : ehEncerrado
-    ? 'ENCERRADO'
-    : !ehPublicado
-    ? (statusEvento ? statusEvento.toUpperCase() : 'NÃO PUBLICADO')
-    : usuario
-    ? 'COMPRAR'
-    : 'ENTRAR';
+  const blocoCompra = disponiveis.length > 0 && podeComprar ? (
+    <>
+      <div className="space-y-2.5">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-texto-terciario">Escolhe o lote</p>
+        {disponiveis.map((l) => {
+          const restantes = l.quantidade_total - l.quantidade_vendida;
+          const selecionado = loteSelecionado === l.id;
+          return (
+            <button
+              key={l.id}
+              type="button"
+              aria-pressed={selecionado}
+              onClick={() => {
+                setLoteSelecionado(l.id);
+                setQuantidade(1);
+              }}
+              className={`w-full p-4 rounded-2xl border-2 text-left transition-all cursor-pointer ${
+                selecionado ? 'border-ouro bg-ouro/10' : 'border-borda-sutil bg-fundo-elevado/50 hover:border-borda-media'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="flex items-center gap-2.5 min-w-0">
+                  <span
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                      selecionado ? 'border-ouro bg-ouro' : 'border-borda-media'
+                    }`}
+                  >
+                    {selecionado && <Check size={12} strokeWidth={4} className="text-azul-950" />}
+                  </span>
+                  <span className="font-bold text-texto-principal truncate">{l.nome_lote}</span>
+                </span>
+                <span className="font-titulo font-extrabold text-xl text-ouro shrink-0">
+                  {l.preco > 0 ? formatarMoeda(l.preco) : 'Grátis'}
+                </span>
+              </div>
+              <p className="mt-1.5 pl-7 text-xs text-texto-secundario">
+                {restantes <= 15 ? <span className="text-red-400 font-bold">Só {restantes} restantes!</span> : `${restantes} disponíveis`}
+              </p>
+            </button>
+          );
+        })}
+      </div>
+
+      {lote && (
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-fundo-elevado/50 border border-borda-sutil">
+          <div>
+            <span className="text-sm font-bold text-texto-principal block">Quantidade</span>
+            {lote.preco === 0 && <span className="text-[11px] text-emerald-400 font-bold">Limite de 1 por pessoa</span>}
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              aria-label="Diminuir quantidade"
+              disabled={quantidade <= 1 || lote.preco === 0}
+              onClick={() => lote.preco > 0 && setQuantidade(Math.max(1, quantidade - 1))}
+              className="w-10 h-10 rounded-full border border-borda-media flex items-center justify-center text-texto-principal hover:border-ouro transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+            >
+              <Minus size={16} />
+            </button>
+            <span className="font-titulo font-extrabold text-2xl text-texto-principal w-7 text-center" aria-live="polite">
+              {lote.preco === 0 ? 1 : quantidade}
+            </span>
+            <button
+              type="button"
+              aria-label="Aumentar quantidade"
+              disabled={lote.preco === 0 || quantidade >= Math.min(5, lote.quantidade_total - lote.quantidade_vendida)}
+              onClick={() => {
+                if (lote.preco === 0) return;
+                const max = lote.quantidade_total - lote.quantidade_vendida;
+                setQuantidade(Math.min(5, max, quantidade + 1));
+              }}
+              className="w-10 h-10 rounded-full border border-borda-media flex items-center justify-center text-texto-principal hover:border-ouro transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+            >
+              <Plus size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {lote && (
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center justify-between text-texto-secundario">
+            <span>Subtotal ({quantidade}x)</span>
+            <span className="text-texto-principal font-semibold">{formatarMoeda(subtotal)}</span>
+          </div>
+          {taxaServico > 0 && (
+            <div className="flex items-center justify-between text-texto-secundario">
+              <span>Taxa da plataforma ({TAXA_SERVICO_LABEL})</span>
+              <span className="text-texto-principal font-semibold">+{formatarMoeda(taxaServico)}</span>
+            </div>
+          )}
+          <div className="pt-3 border-t border-dashed border-borda-media flex items-end justify-between">
+            <span className="text-xs font-black uppercase tracking-wider text-texto-terciario">Total</span>
+            <span className="font-titulo font-extrabold text-3xl text-texto-principal leading-none">{formatarMoeda(totalFinal)}</span>
+          </div>
+        </div>
+      )}
+
+      <Botao larguraTotal tamanho="xl" onClick={aoComprar} disabled={!loteSelecionado} variante="festiva" icone={<Ticket size={20} />}>
+        {usuario ? 'Garantir ingresso' : 'Entrar para comprar'}
+      </Botao>
+
+      <p className="flex items-center justify-center gap-2 text-xs font-semibold text-texto-secundario">
+        <ShieldCheck size={15} className="text-emerald-400" />
+        Pix ou cartão · QR Code na hora
+      </p>
+    </>
+  ) : (
+    <div className="text-center py-6 space-y-3">
+      <span className="w-16 h-16 rounded-2xl bg-fundo-elevado border border-borda-media flex items-center justify-center mx-auto -rotate-6">
+        {ehCancelado ? <XCircle className="w-8 h-8 text-red-400" /> : <Clock className="w-8 h-8 text-texto-terciario" />}
+      </span>
+      <p className="font-titulo font-extrabold text-2xl text-texto-principal">
+        {ehCancelado ? 'Evento cancelado' : ehEncerrado ? 'Esse já rolou' : !ehPublicado ? 'Vendas fechadas' : 'Esgotou!'}
+      </p>
+      <p className="text-sm text-texto-secundario">
+        {ehCancelado
+          ? 'A organização cancelou este evento.'
+          : ehEncerrado
+            ? 'As vendas deste evento foram encerradas.'
+            : !ehPublicado
+              ? 'Este evento não está com vendas abertas.'
+              : 'Fica de olho que pode abrir lote novo.'}
+      </p>
+      <Link href="/eventos" className="botao-vazado h-12 px-6 text-sm mt-2">
+        Ver outros eventos
+      </Link>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-[#fafafa] text-slate-900">
+    <div className="min-h-screen pb-40 lg:pb-0">
       {bannerCancelamento && (
         <div className="bg-red-500/10 border-b border-red-500/30">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <AlertTriangle size={18} className="text-red-400 shrink-0" />
               <div>
-                <p className="text-sm font-bold text-red-700">
-                  Pagamento não foi concluído
-                </p>
-                <p className="text-xs text-red-600/80">
-                  O pagamento foi cancelado ou não foi finalizado. Seu ingresso não foi gerado. Você pode tentar novamente abaixo.
-                </p>
+                <p className="text-sm font-bold text-red-300">Pagamento não concluído</p>
+                <p className="text-xs text-red-400">Seu ingresso não foi gerado. Você pode tentar de novo abaixo.</p>
               </div>
             </div>
             <button
+              type="button"
+              aria-label="Fechar aviso"
               onClick={() => {
                 setBannerCancelamento(false);
                 window.history.replaceState({}, '', `/eventos/${params.id}`);
               }}
-              className="text-red-400 hover:text-red-600 transition-colors p-1 shrink-0"
+              className="text-red-400 hover:text-red-300 transition-colors p-1 shrink-0 cursor-pointer"
             >
               <XCircle size={18} />
             </button>
@@ -269,539 +380,224 @@ function ComponenteDetalheEvento({ eventoInicial }: ConteudoDetalheEventoProps) 
         </div>
       )}
 
-      <div className="bg-slate-100 border-b border-slate-200 py-2.5 text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 truncate">
-            <Link href="/" className="hover:text-slate-900 transition-colors">Início</Link>
-            <span>/</span>
-            <Link href="/eventos" className="hover:text-[#c59941] transition-colors">Eventos</Link>
-            <span>/</span>
-            <span className="text-slate-900 font-bold truncate max-w-xs">{evento.titulo}</span>
-          </div>
-
-          <button
-            onClick={aoCompartilhar}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white hover:bg-slate-200/60 text-slate-700 hover:text-slate-950 text-xs font-medium transition-all border border-slate-200 shadow-xs shrink-0"
-          >
-            {copiado ? (
-              <>
-                <Check size={13} className="text-emerald-600" />
-                <span className="text-emerald-600 font-bold">Link Copiado</span>
-              </>
-            ) : (
-              <>
-                <Share2 size={13} className="text-[#c59941]" />
-                <span>Compartilhar</span>
-              </>
-            )}
-          </button>
+      {/* ============ HERO ============ */}
+      <section className="relative overflow-hidden fundo-granulado">
+        <div className="absolute inset-0 -z-0" aria-hidden="true">
+          {evento.imagem_url ? (
+            <img src={evento.imagem_url} alt="" className="w-full h-full object-cover blur-2xl scale-125 opacity-40" />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-azul-700 to-azul-950" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-b from-fundo-principal/40 via-fundo-principal/70 to-fundo-principal" />
         </div>
-      </div>
 
-      <section className="relative overflow-hidden bg-[#0e1422] border-b border-slate-200 text-white">
-        <div className="relative min-h-[420px] sm:min-h-[500px] flex items-end pb-8 sm:pb-12 pt-8 sm:pt-12">
-          <div className="absolute inset-0 z-0">
-            {evento.imagem_url ? (
-              <img
-                src={evento.imagem_url}
-                alt={evento.titulo}
-                fetchPriority="high"
-                decoding="async"
-                className="w-full h-full object-cover filter brightness-40 blur-md scale-110"
-              />
-            ) : (
-              <div
-                className="w-full h-full"
-                style={{
-                  background: `linear-gradient(135deg, ${evento.atletica?.cor_primaria || '#c59941'}, #9a7228, #0e1422)`,
-                }}
-              />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0e1422] via-[#0e1422]/70 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#0e1422] via-[#0e1422]/40 to-transparent" />
-          </div>
-
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10 w-full">
-            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-6 sm:gap-8">
-              {evento.imagem_url ? (
-                <div className="w-full md:w-80 sm:max-w-xs shrink-0 rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl bg-[#162036] aspect-[4/3] sm:aspect-[16/10] md:aspect-[4/3] relative group">
-                  <img
-                    src={evento.imagem_url}
-                    alt={evento.titulo}
-                    fetchPriority="high"
-                    decoding="async"
-                    width={400}
-                    height={300}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-              ) : (
-                <div className="w-full md:w-80 sm:max-w-xs shrink-0 rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl bg-gradient-to-br from-[#c59941] via-[#9a7228] to-[#0e1422] aspect-[4/3] sm:aspect-[16/10] md:aspect-[4/3] flex items-center justify-center">
-                  <Ticket className="w-20 h-20 text-white/40" />
-                </div>
-              )}
-
-              <div className="flex-1 space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="px-3 py-1 rounded-sm bg-gradient-to-r from-[#c59941] to-[#9a7228] text-white text-xs font-black uppercase tracking-wider shadow-lg flex items-center gap-1">
-                      <Flame size={14} />
-                      VENDA OFICIAL
-                    </span>
-                    {evento.atletica?.nome && (
-                      <span className="px-2.5 py-1 rounded-sm bg-[#0e1422]/90 text-[#f4d68a] text-xs font-black uppercase tracking-wider border border-[#c59941]/30 backdrop-blur-sm">
-                        {evento.atletica.nome}
-                      </span>
-                    )}
-                  </div>
-
-                  <button
-                    onClick={aoCompartilhar}
-                    className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0e1422]/90 hover:bg-[#162036] text-white hover:text-[#f4d68a] text-xs font-bold transition-all border border-white/20 hover:border-[#c59941]/50 backdrop-blur-md shadow-md active:scale-95"
-                  >
-                    {copiado ? (
-                      <>
-                        <Check size={15} className="text-emerald-400" />
-                        <span className="text-emerald-400 font-bold">Link Copiado!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Share2 size={15} className="text-[#f4d68a]" />
-                        <span>Compartilhar Evento</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black font-titulo tracking-tight uppercase text-white drop-shadow-lg leading-tight">
-                  {evento.titulo}
-                </h1>
-
-                <div className="flex flex-wrap items-center gap-3 text-xs sm:text-sm font-bold text-slate-200">
-                  <div className="flex items-center gap-1.5 bg-[#0e1422]/80 px-3.5 py-2 rounded-md border border-white/10 text-[#f4d68a]">
-                    <Calendar size={16} className="text-[#c59941]" />
-                    <span>{formatarDataHora(evento.data_evento)}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 bg-[#0e1422]/80 px-3.5 py-2 rounded-md border border-white/10 text-slate-200">
-                    <MapPin size={16} className="text-[#c59941]" />
-                    <span>{evento.local}{evento.cidade ? `, ${evento.cidade}` : ''}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-white border-b border-slate-200 sticky top-[64px] sm:top-[80px] z-30 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <nav className="flex space-x-4 sm:space-x-8 overflow-x-auto text-xs font-black uppercase tracking-wider sem-barra-rolagem touch-pan-x py-0.5">
-            <button
-              onClick={() => setAbaAtiva('sobre')}
-              className={`py-3.5 border-b-2 transition-colors whitespace-nowrap min-h-[44px] touch-manipulation ${
-                abaAtiva === 'sobre'
-                  ? 'border-[#c59941] text-[#c59941]'
-                  : 'border-transparent text-slate-500 hover:text-slate-900'
-              }`}
-            >
-              Sobre o Evento
-            </button>
-            <button
-              onClick={() => setAbaAtiva('lotes')}
-              className={`py-3.5 border-b-2 transition-colors whitespace-nowrap min-h-[44px] touch-manipulation ${
-                abaAtiva === 'lotes'
-                  ? 'border-[#c59941] text-[#c59941]'
-                  : 'border-transparent text-slate-500 hover:text-slate-900'
-              }`}
-            >
-              Ingressos & Setores
-            </button>
-            <button
-              onClick={() => setAbaAtiva('mapa')}
-              className={`py-3.5 border-b-2 transition-colors whitespace-nowrap min-h-[44px] touch-manipulation ${
-                abaAtiva === 'mapa'
-                  ? 'border-[#c59941] text-[#c59941]'
-                  : 'border-transparent text-slate-500 hover:text-slate-900'
-              }`}
-            >
-              Mapa do Local
-            </button>
-            <button
-              onClick={() => setAbaAtiva('regras')}
-              className={`py-3.5 border-b-2 transition-colors whitespace-nowrap min-h-[44px] touch-manipulation ${
-                abaAtiva === 'regras'
-                  ? 'border-[#c59941] text-[#c59941]'
-                  : 'border-transparent text-slate-500 hover:text-slate-900'
-              }`}
-            >
-              Informações Importantes
-            </button>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-6 sm:pt-10 pb-12 sm:pb-16">
+          <nav aria-label="Trilha" className="flex items-center gap-2 text-xs font-semibold text-texto-secundario mb-8">
+            <Link href="/eventos" className="inline-flex items-center gap-1.5 hover:text-ouro transition-colors">
+              <ArrowLeft size={15} /> Eventos
+            </Link>
           </nav>
-        </div>
-      </section>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-8">
-            {abaAtiva === 'sobre' && (
-              <div className="space-y-6">
-                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
-                  <h3 className="text-base font-black uppercase tracking-wider text-slate-900 mb-4 pb-3 border-b border-slate-200 flex items-center gap-2">
-                    <Info size={18} className="text-[#c59941]" />
-                    Sobre o Evento
-                  </h3>
-                  <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">
-                    {evento.descricao ||
-                      'Prepare-se para viver uma experiência inesquecível! Este evento conta com estrutura completa, segurança especializada e as melhores atrações.'}
-                  </p>
-                </div>
-
-                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
-                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 mb-3">
-                    Organização Oficial
-                  </h3>
-                  <div className="flex items-center gap-4">
-                    {evento.atletica?.logo_url ? (
-                      <img
-                        src={evento.atletica.logo_url}
-                        alt={evento.atletica.nome}
-                        className="w-12 h-12 rounded-xl object-cover border border-slate-200"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#c59941] to-[#9a7228] flex items-center justify-center text-white font-black text-lg">
-                        {evento.atletica?.nome?.[0] || 'C'}
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-base font-bold text-slate-900">{evento.atletica?.nome || 'Atlética Organizadora'}</p>
-                      <p className="text-xs text-slate-500">{evento.atletica?.faculdade || 'Atlética Cinética'}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {abaAtiva === 'lotes' && (
-              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
-                <h3 className="text-base font-black uppercase tracking-wider text-slate-900 mb-4 pb-3 border-b border-slate-200 flex items-center gap-2">
-                  <Ticket size={18} className="text-[#c59941]" />
-                  Tabela de Preços e Setores
-                </h3>
-                <div className="space-y-3">
-                  {evento.lotes_ingresso.map((l) => (
-                    <div
-                      key={l.id}
-                      className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-200"
-                    >
-                      <div>
-                        <p className="text-sm font-black text-slate-900 flex items-center gap-1.5">
-                          {l.nome_lote}
-                        </p>
-                        <p className="text-xs text-slate-500">Entrada individual com QR Code</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-base font-black text-[#c59941]">
-                          {l.preco > 0 ? formatarMoeda(l.preco) : 'Grátis'}
-                        </p>
-                        {!l.ativo ? (
-                          <span className="text-[10px] font-black uppercase text-slate-400">Inativo</span>
-                        ) : !podeComprar ? (
-                          <span className="text-[10px] font-black uppercase text-red-500">Indisponível</span>
-                        ) : l.quantidade_total - l.quantidade_vendida > 0 ? (
-                          <span className="text-[10px] font-black uppercase text-emerald-600">Disponível</span>
-                        ) : (
-                          <span className="text-[10px] font-black uppercase text-red-500">Esgotado</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {abaAtiva === 'mapa' && (
-              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
-                <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-200 flex-wrap gap-2">
-                  <h3 className="text-base font-black uppercase tracking-wider text-slate-900 flex items-center gap-2">
-                    <Map size={18} className="text-[#c59941]" />
-                    Mapa de Setores e Local
-                  </h3>
-                  {evento.local_definido !== false && evento.latitude != null && evento.longitude != null && (
-                    <a
-                      href={`https://www.google.com/maps?q=${evento.latitude},${evento.longitude}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold text-[#9a7228] border border-slate-200 transition-colors"
-                    >
-                      <ExternalLink size={14} />
-                      <span>Abrir no Maps</span>
-                    </a>
-                  )}
-                </div>
-
-                {evento.local_definido !== false && evento.latitude != null && evento.longitude != null ? (
-                  <div className="space-y-3">
-                    <MapView
-                      lat={evento.latitude}
-                      lng={evento.longitude}
-                      tituloEvento={evento.titulo}
-                      localEvento={evento.local}
-                      className="h-88 sm:h-96"
-                    />
-                    <p className="text-xs text-slate-500">
-                      Localização: <strong className="text-slate-900">{evento.local}</strong>{evento.cidade ? ` (${evento.cidade})` : ''}
-                    </p>
-                  </div>
+          <div className="grid md:grid-cols-[minmax(0,360px)_1fr] gap-8 lg:gap-14 items-end">
+            <div className="relative max-w-sm md:max-w-none">
+              <div className="aspect-[4/5] rounded-[1.75rem] overflow-hidden border border-borda-media shadow-[0_40px_80px_-30px_rgba(0,0,0,0.8)] rotate-[-2deg] bg-fundo-elevado">
+                {evento.imagem_url ? (
+                  <img src={evento.imagem_url} alt={evento.titulo} fetchPriority="high" decoding="async" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="py-12 px-6 bg-slate-50 rounded-xl border border-slate-200 text-center space-y-3">
-                    <MapPinOff size={40} className="text-slate-400 mx-auto" />
-                    <p className="text-sm font-bold text-slate-700">
-                      O local deste evento ainda não foi definido.
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {evento.local ? `Endereço informado: ${evento.local}` : 'Acompanhe as atualizações da organização.'}
-                    </p>
+                  <div className="w-full h-full fundo-pontos flex items-center justify-center">
+                    <Ticket className="w-20 h-20 text-ouro/40 -rotate-12" />
                   </div>
                 )}
               </div>
-            )}
-
-            {abaAtiva === 'regras' && (
-              <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-4 shadow-xs">
-                <h3 className="text-base font-black uppercase tracking-wider text-slate-900 mb-4 pb-3 border-b border-slate-200 flex items-center gap-2">
-                  <AlertTriangle size={18} className="text-[#d97706]" />
-                  Informações de Entrada & Regras
-                </h3>
-                <ul className="space-y-3 text-xs text-slate-600 leading-relaxed">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle size={14} className="text-[#c59941] shrink-0 mt-0.5" />
-                    <span><strong>Classificação Etária:</strong> Evento destinado para maiores de 18 anos. Apresentação obrigatória de documento oficial com foto.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle size={14} className="text-[#c59941] shrink-0 mt-0.5" />
-                    <span><strong>QR Code de Acesso:</strong> O ingresso será disponibilizado digitalmente em sua conta imediatamente após a confirmação do pagamento via PIX ou Cartão.</span>
-                  </li>
-                </ul>
+              <div className="absolute -bottom-5 -right-3 sm:-right-6 flex flex-col items-center justify-center w-24 h-28 rounded-3xl bg-ouro text-azul-950 shadow-[4px_4px_0_#070d22] rotate-6">
+                <span className="text-xs font-black tracking-widest">{data.mes}</span>
+                <span className="font-titulo font-extrabold text-5xl leading-none">{data.dia}</span>
+                <span className="text-[11px] font-bold opacity-70">{data.semana}</span>
               </div>
-            )}
-          </div>
+            </div>
 
-          <div className="space-y-6">
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 sticky top-[140px] shadow-xl space-y-5">
-              <div className="pb-4 border-b border-slate-200 flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-[#9a7228]">
-                    INGRESSO OFICIAL
-                  </span>
-                  <h3 className="text-xl font-black uppercase font-titulo text-slate-900 flex items-center gap-2 mt-0.5">
-                    <ShoppingCart size={20} className="text-[#c59941]" />
-                    Comprar Ingresso
-                  </h3>
-                </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2 mb-5">
+                {evento.atletica?.nome && (
+                  <span className="selo bg-ouro/15 text-ouro border border-ouro/40">{evento.atletica.nome}</span>
+                )}
+                {ehCancelado ? (
+                  <span className="selo bg-red-500 text-white">Cancelado</span>
+                ) : ehEncerrado ? (
+                  <span className="selo bg-azul-700 text-texto-secundario">Encerrado</span>
+                ) : disponiveis.length === 0 ? (
+                  <span className="selo bg-red-500 text-white">Esgotado</span>
+                ) : (
+                  <span className="selo bg-emerald-400 text-azul-950">Vendas abertas</span>
+                )}
+                {contagem && <span className="selo bg-texto-principal text-azul-950">{contagem}</span>}
+              </div>
+
+              <h1 className="titulo-display text-5xl sm:text-6xl lg:text-7xl text-texto-principal break-words">{evento.titulo}</h1>
+
+              <div className="mt-7 flex flex-wrap gap-3">
+                <span className="inline-flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-fundo-card/80 border border-borda-sutil backdrop-blur text-sm font-semibold text-texto-principal">
+                  <Calendar size={18} className="text-ouro" />
+                  {formatarDataHora(evento.data_evento)}
+                </span>
+                <span className="inline-flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-fundo-card/80 border border-borda-sutil backdrop-blur text-sm font-semibold text-texto-principal">
+                  <MapPin size={18} className="text-ouro" />
+                  {evento.local}
+                  {evento.cidade ? ` · ${evento.cidade}` : ''}
+                </span>
                 <button
+                  type="button"
                   onClick={aoCompartilhar}
-                  className="p-2 rounded-lg bg-slate-100 hover:bg-[#c59941]/20 text-slate-600 hover:text-[#9a7228] border border-slate-200 transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold shrink-0"
-                  title="Compartilhar evento"
+                  className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl border border-borda-media text-sm font-bold text-texto-principal hover:border-ouro hover:text-ouro transition-colors cursor-pointer"
                 >
-                  {copiado ? (
-                    <>
-                      <Check size={16} className="text-emerald-600" />
-                      <span className="text-emerald-600 text-[11px]">Copiado!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Share2 size={16} className="text-[#c59941]" />
-                    </>
-                  )}
+                  {copiado ? <Check size={18} className="text-emerald-400" /> : <Share2 size={18} />}
+                  {copiado ? 'Link copiado!' : 'Chamar a galera'}
                 </button>
               </div>
-
-              {disponiveis.length > 0 ? (
-                <>
-                  <div className="space-y-2.5">
-                    <label className="text-xs font-black uppercase tracking-wider text-slate-600 block">
-                      Selecione o Lote / Setor:
-                    </label>
-                    {disponiveis.map((l) => {
-                      const restantes = l.quantidade_total - l.quantidade_vendida;
-                      const selecionado = loteSelecionado === l.id;
-
-                      return (
-                        <button
-                          key={l.id}
-                          disabled={!podeComprar}
-                          onClick={() => {
-                            if (!podeComprar) return;
-                            setLoteSelecionado(l.id);
-                            setQuantidade(1);
-                          }}
-                          className={`w-full p-3.5 rounded-xl border text-left transition-all ${
-                            !podeComprar
-                              ? 'border-slate-200 bg-slate-100 opacity-60 cursor-not-allowed'
-                              : selecionado
-                              ? 'border-[#c59941] bg-[#c59941]/10 shadow-md cursor-pointer'
-                              : 'border-slate-200 bg-slate-50 hover:border-slate-300 cursor-pointer'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-bold text-slate-900">{l.nome_lote}</span>
-                            <span className="text-base font-black text-[#c59941]">
-                              {l.preco > 0 ? formatarMoeda(l.preco) : 'Grátis'}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-500">
-                            <Users size={12} />
-                            <span>
-                              {podeComprar ? `${restantes} ingressos restantes` : 'Indisponível'}
-                            </span>
-                            {podeComprar && restantes <= 15 && (
-                              <span className="text-red-500 font-bold">• Poucas vagas</span>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {lote && (
-                    <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                      <div>
-                        <span className="text-xs font-black uppercase text-slate-700 block">Quantidade</span>
-                        {lote.preco === 0 && (
-                          <span className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider">
-                            Limite: 1 por usuário
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <button
-                          disabled={!podeComprar || quantidade <= 1 || lote.preco === 0}
-                          onClick={() => podeComprar && lote.preco > 0 && setQuantidade(Math.max(1, quantidade - 1))}
-                          className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-800 hover:bg-[#c59941] hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white"
-                        >
-                          <Minus size={14} />
-                        </button>
-                        <span className="text-base font-black text-slate-900 w-6 text-center">
-                          {lote.preco === 0 ? 1 : quantidade}
-                        </span>
-                        <button
-                          disabled={!podeComprar || lote.preco === 0 || (lote && quantidade >= Math.min(5, lote.quantidade_total - lote.quantidade_vendida))}
-                          onClick={() => {
-                            if (!podeComprar || !lote || lote.preco === 0) return;
-                            const max = lote.quantidade_total - lote.quantidade_vendida;
-                            setQuantidade(Math.min(5, max, quantidade + 1));
-                          }}
-                          className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-800 hover:bg-[#c59941] hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white"
-                        >
-                          <Plus size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {lote && (
-                    <div className="pt-3 border-t border-slate-200 space-y-2">
-                      <div className="flex items-center justify-between text-xs text-slate-500">
-                        <span>Subtotal ({quantidade}x)</span>
-                        <span className="font-medium text-slate-800">{formatarMoeda(subtotal)}</span>
-                      </div>
-
-                      {taxaServico > 0 && (
-                        <div className="flex items-center justify-between text-xs text-slate-500">
-                          <span className="flex items-center gap-1">
-                            Taxa da plataforma ({TAXA_SERVICO_LABEL})
-                          </span>
-                          <span className="font-semibold text-[#9a7228]">+{formatarMoeda(taxaServico)}</span>
-                        </div>
-                      )}
-
-                      <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
-                        <div>
-                          <span className="text-xs font-black uppercase text-slate-500 block">Valor Total</span>
-                          {taxaServico > 0 && (
-                            <span className="text-[10px] text-slate-400">Taxas inclusas</span>
-                          )}
-                        </div>
-                        <span className="text-2xl font-black text-slate-900">
-                          {formatarMoeda(totalFinal)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  <Botao
-                    larguraTotal
-                    tamanho="xl"
-                    onClick={aoComprar}
-                    disabled={!podeComprar || !loteSelecionado}
-                    variante={podeComprar ? 'festiva' : 'fantasma'}
-                  >
-                    {textoBotaoDesktop}
-                  </Botao>
-
-                  <div className="flex items-center justify-center gap-2 text-[10px] uppercase font-bold text-slate-500 pt-1">
-                    <ShieldCheck size={14} className="text-emerald-600" />
-                    <span>Pagamento Seguro via Pix ou Cartão</span>
-                  </div>
-                </>
-              ) : (
-                <div className="text-center py-8 space-y-4">
-                  <Clock className="w-10 h-10 text-slate-400 mx-auto mb-2" />
-                  <p className="text-sm font-bold uppercase text-slate-800">
-                    {ehCancelado ? 'Evento Cancelado' : ehEncerrado ? 'Evento Encerrado' : 'Ingressos Esgotados'}
-                  </p>
-                  <p className="text-xs text-slate-500 mt-1">
-                    {ehCancelado
-                      ? 'Este evento foi cancelado pela organização.'
-                      : ehEncerrado
-                      ? 'As vendas para este evento foram encerradas.'
-                      : 'Acompanhe as atualizações de novos lotes.'}
-                  </p>
-                  {!podeComprar && (
-                    <Botao
-                      larguraTotal
-                      tamanho="xl"
-                      disabled={true}
-                      variante="fantasma"
-                    >
-                      {textoBotaoDesktop}
-                    </Botao>
-                  )}
-                </div>
-              )}
             </div>
           </div>
         </div>
-      </main>
+      </section>
 
-      {(disponiveis.length > 0 || !podeComprar) && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] border-t border-slate-200 shadow-2xl flex items-center justify-between gap-3">
-          <div>
-            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
-              {podeComprar ? `Total com taxa (${quantidade}x)` : 'Status'}
-            </span>
-            <span className="text-lg font-black text-[#c59941]">
-              {podeComprar
-                ? lote ? formatarMoeda(totalFinal) : 'Selecione'
-                : ehCancelado ? 'Cancelado' : ehEncerrado ? 'Encerrado' : 'Indisponível'}
-            </span>
-            {podeComprar && taxaServico > 0 && (
-              <span className="text-[10px] text-slate-500 block -mt-0.5">
-                Taxa de {formatarMoeda(taxaServico)} inclusa
-              </span>
+      {/* ============ CONTEÚDO ============ */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-14 grid lg:grid-cols-[1fr_400px] gap-8 lg:gap-12 items-start">
+        <div className="space-y-12 min-w-0">
+          <section>
+            <h2 className="titulo-display text-3xl sm:text-4xl text-texto-principal mb-5">Sobre o rolê</h2>
+            <p className="text-base sm:text-lg text-texto-secundario leading-relaxed whitespace-pre-line">
+              {evento.descricao?.trim() || 'A organização ainda não publicou a descrição deste evento.'}
+            </p>
+          </section>
+
+          <section>
+            <h2 className="titulo-display text-3xl sm:text-4xl text-texto-principal mb-5">Lotes e preços</h2>
+            {evento.lotes_ingresso.length === 0 ? (
+              <p className="text-texto-secundario">Nenhum lote cadastrado ainda.</p>
+            ) : (
+              <ul className="grid sm:grid-cols-2 gap-3">
+                {[...evento.lotes_ingresso]
+                  .sort((a, b) => a.ordem - b.ordem)
+                  .map((l) => {
+                    const restante = l.quantidade_total - l.quantidade_vendida;
+                    const status = !l.ativo
+                      ? { texto: 'Fechado', cor: 'text-texto-terciario' }
+                      : !podeComprar
+                        ? { texto: 'Indisponível', cor: 'text-texto-terciario' }
+                        : restante > 0
+                          ? { texto: 'Disponível', cor: 'text-emerald-400' }
+                          : { texto: 'Esgotado', cor: 'text-red-400' };
+                    return (
+                      <li key={l.id} className="flex items-center justify-between gap-3 p-5 rounded-3xl bg-fundo-card border border-borda-sutil">
+                        <div className="min-w-0">
+                          <p className="font-bold text-texto-principal truncate">{l.nome_lote}</p>
+                          <p className={`text-xs font-black uppercase tracking-wider mt-1 ${status.cor}`}>{status.texto}</p>
+                        </div>
+                        <p className={`font-titulo font-extrabold text-2xl shrink-0 ${restante > 0 && l.ativo ? 'text-ouro' : 'text-texto-terciario line-through'}`}>
+                          {l.preco > 0 ? formatarMoeda(l.preco) : 'Grátis'}
+                        </p>
+                      </li>
+                    );
+                  })}
+              </ul>
             )}
-          </div>
+          </section>
 
-          <Botao
-            tamanho="md"
-            onClick={aoComprar}
-            disabled={!podeComprar || !loteSelecionado}
-            variante={podeComprar ? 'festiva' : 'fantasma'}
-            className="flex-1 max-w-[200px]"
-          >
-            {textoBotaoMobile}
-          </Botao>
+          <section>
+            <div className="flex items-center justify-between gap-3 flex-wrap mb-5">
+              <h2 className="titulo-display text-3xl sm:text-4xl text-texto-principal">Onde é</h2>
+              {evento.local_definido !== false && evento.latitude != null && evento.longitude != null && (
+                <a
+                  href={`https://www.google.com/maps?q=${evento.latitude},${evento.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-borda-media text-sm font-bold text-texto-principal hover:border-ouro hover:text-ouro transition-colors"
+                >
+                  <ExternalLink size={15} /> Abrir no Maps
+                </a>
+              )}
+            </div>
+            {evento.local_definido !== false && evento.latitude != null && evento.longitude != null ? (
+              <div className="rounded-[1.75rem] overflow-hidden border border-borda-sutil">
+                <MapView lat={evento.latitude} lng={evento.longitude} tituloEvento={evento.titulo} localEvento={evento.local} className="h-80 sm:h-96" />
+                <p className="px-5 py-4 bg-fundo-card text-sm text-texto-secundario">
+                  <strong className="text-texto-principal">{evento.local}</strong>
+                  {evento.cidade ? ` · ${evento.cidade}` : ''}
+                </p>
+              </div>
+            ) : (
+              <div className="py-12 px-6 rounded-[1.75rem] border border-dashed border-borda-media text-center">
+                <MapPinOff size={36} className="text-texto-terciario mx-auto mb-3" />
+                <p className="font-bold text-texto-principal">Local ainda não definido</p>
+                <p className="text-sm text-texto-secundario mt-1">
+                  {evento.local ? `Informado: ${evento.local}` : 'Acompanhe as atualizações da organização.'}
+                </p>
+              </div>
+            )}
+          </section>
+
+          <section>
+            <h2 className="titulo-display text-3xl sm:text-4xl text-texto-principal mb-5">Antes de ir</h2>
+            <ul className="grid sm:grid-cols-3 gap-3">
+              {[
+                { icone: QrCode, titulo: 'QR Code na conta', texto: 'O ingresso aparece em "Meus ingressos" assim que o pagamento é aprovado.' },
+                { icone: CheckCircle, titulo: 'Uso único', texto: 'Cada QR Code é validado uma vez só na portaria. Não compartilhe.' },
+                { icone: Info, titulo: 'Leve documento', texto: 'Tenha um documento oficial com foto para conferência na entrada.' },
+              ].map(({ icone: Icone, titulo, texto }) => (
+                <li key={titulo} className="p-5 rounded-3xl bg-fundo-card border border-borda-sutil">
+                  <Icone size={22} className="text-ouro mb-4" />
+                  <p className="font-bold text-texto-principal">{titulo}</p>
+                  <p className="text-sm text-texto-secundario mt-1 leading-relaxed">{texto}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          {evento.atletica?.nome && (
+            <section className="flex items-center gap-4 p-5 rounded-3xl bg-fundo-card border border-borda-sutil">
+              {evento.atletica.logo_url ? (
+                <img src={evento.atletica.logo_url} alt="" className="w-14 h-14 rounded-2xl object-cover border border-borda-sutil" />
+              ) : (
+                <span className="w-14 h-14 rounded-2xl bg-ouro text-azul-950 flex items-center justify-center font-titulo font-extrabold text-2xl">
+                  {evento.atletica.nome[0]}
+                </span>
+              )}
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-texto-terciario">Organização</p>
+                <p className="font-titulo font-extrabold text-xl text-texto-principal">{evento.atletica.nome}</p>
+                {evento.atletica.faculdade && <p className="text-sm text-texto-secundario">{evento.atletica.faculdade}</p>}
+              </div>
+            </section>
+          )}
+        </div>
+
+        {/* Card de compra */}
+        <aside id="comprar" className="lg:sticky lg:top-28 scroll-mt-28">
+          <div className="relative rounded-[1.75rem] bg-fundo-card border border-borda-media p-6 space-y-5 shadow-[0_30px_70px_-35px_rgba(242,193,78,0.35)]">
+            <div className="flex items-center gap-2">
+              <span className="w-10 h-10 rounded-xl bg-ouro text-azul-950 flex items-center justify-center -rotate-6">
+                <Ticket size={20} />
+              </span>
+              <h2 className="font-titulo font-extrabold text-2xl text-texto-principal">Ingressos</h2>
+            </div>
+            {blocoCompra}
+          </div>
+        </aside>
+      </div>
+
+      {/* Barra de compra no celular (acima da navegação inferior) */}
+      {podeComprar && disponiveis.length > 0 && (
+        <div className="lg:hidden fixed inset-x-3 bottom-[calc(84px+env(safe-area-inset-bottom,0px))] z-40">
+          <div className="flex items-center justify-between gap-3 rounded-[1.5rem] bg-fundo-card/95 backdrop-blur-xl border border-borda-media p-3 pl-5 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.9)]">
+            <div className="min-w-0">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-texto-terciario block">
+                {lote ? `${quantidade}x ${lote.nome_lote}` : 'Selecione um lote'}
+              </span>
+              <span className="font-titulo font-extrabold text-xl text-ouro">{lote ? formatarMoeda(totalFinal) : '—'}</span>
+            </div>
+            <button type="button" onClick={aoComprar} disabled={!loteSelecionado} className="botao-pop h-12 px-6 text-base shrink-0">
+              {usuario ? 'Comprar' : 'Entrar'}
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -810,11 +606,13 @@ function ComponenteDetalheEvento({ eventoInicial }: ConteudoDetalheEventoProps) 
 
 export default function ConteudoDetalheEvento({ eventoInicial }: ConteudoDetalheEventoProps) {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-[#fafafa] flex items-center justify-center pt-20">
-        <Carregando tamanho="lg" texto="Carregando detalhes do evento..." />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-[70vh] flex items-center justify-center">
+          <Carregando tamanho="lg" texto="Carregando o evento..." />
+        </div>
+      }
+    >
       <ComponenteDetalheEvento eventoInicial={eventoInicial} />
     </Suspense>
   );

@@ -146,7 +146,7 @@ function ConteudoCheckout() {
           Voltar ao evento
         </Link>
 
-        <h1 className="text-xl sm:text-3xl font-black font-titulo mb-6 sm:mb-8">
+        <h1 className="titulo-display text-4xl sm:text-6xl text-texto-principal mb-8 sm:mb-10">
           Finalizar <span className="gradiente-texto">Compra</span>
         </h1>
 

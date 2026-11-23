@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
         transaction_amount: Number((validacao.totalCentavos / 100).toFixed(2)),
         description: descricao.slice(0, 100),
         payment_method_id: 'pix',
-        statement_descriptor: 'MEUINGRSS LOJA',
+        statement_descriptor: 'CINETICA LOJA',
         payer: montarPayer(perfil, user.email),
         external_reference: pedido.orderId,
         notification_url: obterUrlWebhook(),

@@ -11,7 +11,7 @@ import { usarAutenticacao } from '@/contextos/ContextoAutenticacao';
 import { useNotificacao } from '@/componentes/ui/Notificacao';
 import { formatarTelefone, formatarCidadeEstado } from '@/lib/utilitarios';
 import { obterIdAtleticaCinetica } from '@/lib/atleticaCinetica';
-import type { Atletica } from '@/tipos';
+import { traduzirErroBanco } from '@/lib/errosBanco';
 import {
   Trophy,
   Camera,
@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 
 const PALETAS_PREDEFINIDAS = [
+  { nome: 'Cinética (Dourado & Azul-marinho)', primaria: '#c59941', secundaria: '#0e1422' },
   { nome: 'Rosa & Roxo Neon', primaria: '#ff007a', secundaria: '#8b5cf6' },
   { nome: 'Ciano & Azul Elétrico', primaria: '#00e5ff', secundaria: '#026cdf' },
   { nome: 'Dourado & Rosa', primaria: '#ffbe00', secundaria: '#ff007a' },
@@ -61,8 +62,8 @@ export default function PaginaConfiguracaoAtletica() {
   const [descricao, setDescricao] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const [capaUrl, setCapaUrl] = useState('');
-  const [corPrimaria, setCorPrimaria] = useState('#ff007a');
-  const [corSecundaria, setCorSecundaria] = useState('#8b5cf6');
+  const [corPrimaria, setCorPrimaria] = useState('#c59941');
+  const [corSecundaria, setCorSecundaria] = useState('#0e1422');
   const [instagram, setInstagram] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
   const [emailContato, setEmailContato] = useState('');
@@ -95,27 +96,7 @@ export default function PaginaConfiguracaoAtletica() {
   async function carregarDadosAtletica() {
     setCarregando(true);
     try {
-      let idParaBuscar = perfil?.atletica_id;
-
-      // Se não tiver atletica_id diretamente no perfil, buscar se existe alguma atletica vinculada
-      if (!idParaBuscar && perfil?.id) {
-        const { data: usuarioPerfil } = await supabase
-          .from('profiles')
-          .select('atletica_id')
-          .eq('id', perfil.id)
-          .maybeSingle();
-
-        if (usuarioPerfil?.atletica_id) {
-          idParaBuscar = usuarioPerfil.atletica_id;
-        }
-      }
-
-      if (!idParaBuscar) {
-        idParaBuscar = (await obterIdAtleticaCinetica(supabase)) || undefined;
-        if (idParaBuscar && perfil?.id) {
-          await supabase.from('profiles').update({ atletica_id: idParaBuscar }).eq('id', perfil.id);
-        }
-      }
+      const idParaBuscar = (await obterIdAtleticaCinetica(supabase)) || undefined;
 
       let query = supabase.from('atleticas').select('*');
 
@@ -267,7 +248,7 @@ export default function PaginaConfiguracaoAtletica() {
 
       sucesso('Imagem enviada!', `A foto de ${tipo === 'logo' ? 'perfil' : 'capa'} foi salva no Supabase Storage.`);
     } catch (err: unknown) {
-      const mensagem = err instanceof Error ? err.message : 'Não foi possível enviar a imagem para o armazenamento.';
+      const mensagem = traduzirErroBanco(err, 'enviar a imagem');
       notificarErro('Erro no upload', mensagem);
     } finally {
       setEnviandoImagem(false);
@@ -345,7 +326,7 @@ export default function PaginaConfiguracaoAtletica() {
           }
         }
       } else {
-        // Criar nova atlética para o diretor
+        // Primeiro acesso sem a Atlética Cinética cadastrada: cria o cadastro dela
         const { data: novaAtl, error: errInsert } = await supabase
           .from('atleticas')
           .insert({
@@ -360,22 +341,13 @@ export default function PaginaConfiguracaoAtletica() {
         }
 
         setAtleticaId(novaAtl.id);
-
-        // Vincular a nova atlética ao perfil do diretor
-        if (perfil?.id) {
-          await supabase
-            .from('profiles')
-            .update({ atletica_id: novaAtl.id })
-            .eq('id', perfil.id);
-        }
       }
 
       setDadosSnapshot(capturarSnapshot());
       setEditando(false);
       sucesso('Atlética salva!', 'As configurações da atlética foram atualizadas com sucesso.');
     } catch (err: unknown) {
-      const mensagem = err instanceof Error ? err.message : 'Ocorreu um erro ao salvar as alterações da atlética.';
-      notificarErro('Erro ao salvar', mensagem);
+      notificarErro('Erro ao salvar', traduzirErroBanco(err, 'salvar a atlética'));
     } finally {
       setSalvando(false);
     }
@@ -868,7 +840,7 @@ export default function PaginaConfiguracaoAtletica() {
                     <CampoTexto
                       value={corPrimaria}
                       onChange={(e) => setCorPrimaria((e.target as HTMLInputElement).value)}
-                      placeholder="#ff007a"
+                      placeholder="#c59941"
                       disabled={desabilitarCores}
                     />
                   </div>

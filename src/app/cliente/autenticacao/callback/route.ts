@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { sanitizarRedirecionamento } from '@/lib/validacoes';
+import { obterUrlPorRole } from '@/lib/dominios';
 
 /** Hosts para os quais o callback pode redirecionar (evita Host header injection). */
 function hostsPermitidos(): string[] {
@@ -135,16 +136,9 @@ export async function GET(request: Request) {
             return criarRespostaRedirecionamento(redirecionar);
           }
 
-          const protocolo = process.env.NEXT_PUBLIC_PROTOCOLO || 'https';
-
-          if (perfil.role === 'diretor') {
-            const dominioDiretoria = (process.env.NEXT_PUBLIC_SUBDOMINIO_DIRETORIA || process.env.NEXT_PUBLIC_SUBDOMINIO_DIRETOR || 'diretoria.meuingrss.com.br').replace(/\/+$/, '');
-            return criarRespostaRedirecionamento(`${protocolo}://${dominioDiretoria}/`);
-          }
-
-          if (perfil.role === 'admin') {
-            const dominioDev = (process.env.NEXT_PUBLIC_SUBDOMINIO_DEV || process.env.NEXT_PUBLIC_SUBDOMINIO_ADMIN || 'dev.meuingrss.com.br').replace(/\/+$/, '');
-            return criarRespostaRedirecionamento(`${protocolo}://${dominioDev}/`);
+          // Diretoria/admin ativos vão para o próprio painel (subdomínio configurado ou /diretor e /admin)
+          if (perfil.status === 'ativo' && (perfil.role === 'diretor' || perfil.role === 'admin')) {
+            return criarRespostaRedirecionamento(obterUrlPorRole(perfil.role));
           }
         }
       }

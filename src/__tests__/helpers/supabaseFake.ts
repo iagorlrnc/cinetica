@@ -84,6 +84,11 @@ export function criarSupabaseFake(config: ConfigFake = {}) {
       in: (c: string, v: unknown[]) => { if (!ehRelacao(c)) filtros.push((l) => v.includes(l[c])); return b; },
       lt: (c: string, v: unknown) => { filtros.push((l) => String(l[c]) < String(v)); return b; },
       gt: (c: string, v: unknown) => { filtros.push((l) => String(l[c]) > String(v)); return b; },
+      not: (c: string, op: string, v: unknown) => {
+        if (op === 'is') filtros.push((l) => (l[c] ?? null) !== v);
+        else if (op === 'eq') filtros.push((l) => l[c] !== v);
+        return b;
+      },
       or: () => b,
       order: () => b,
       range: () => b,

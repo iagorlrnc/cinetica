@@ -217,20 +217,20 @@ export default function PaginaCadastro() {
 
   if (sucesso) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-[#fafafa] relative overflow-hidden">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-[#c59941]/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="bg-white rounded-3xl p-8 sm:p-10 shadow-xl max-w-md w-full text-center animar-entrar-escala border border-slate-200/80 relative z-10">
-          <div className="w-20 h-20 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center mx-auto mb-6 shadow-sm">
-            <CheckCircle className="w-10 h-10 text-emerald-600" />
+      <div className="min-h-screen flex items-center justify-center p-4 bg-fundo-principal relative overflow-hidden">
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-ouro/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="bg-fundo-card rounded-3xl p-8 sm:p-10 shadow-xl max-w-md w-full text-center animar-entrar-escala border border-borda-sutil relative z-10">
+          <div className="w-20 h-20 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto mb-6 shadow-sm">
+            <CheckCircle className="w-10 h-10 text-emerald-400" />
           </div>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold uppercase tracking-wider mb-3">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-3">
             Sucesso
           </span>
-          <h2 className="text-2xl font-black font-titulo text-slate-900 mb-3 tracking-tight">
+          <h2 className="text-2xl font-black font-titulo text-texto-principal mb-3 tracking-tight">
             Cadastro realizado!
           </h2>
-          <p className="text-sm text-slate-600 mb-6 leading-relaxed">
-            Sua conta foi criada e seu e-mail <strong className="text-slate-900 font-medium">{email}</strong> foi validado com sucesso!
+          <p className="text-sm text-texto-secundario mb-6 leading-relaxed">
+            Sua conta foi criada e seu e-mail <strong className="text-texto-principal font-medium">{email}</strong> foi validado com sucesso!
           </p>
           <Link href="/autenticacao/entrar">
             <Botao variante="festiva" larguraTotal tamanho="lg">
@@ -243,31 +243,31 @@ export default function PaginaCadastro() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-3 sm:p-6 py-6 sm:py-12 bg-[#fafafa] relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-3 sm:p-6 py-6 sm:py-12 bg-fundo-principal relative overflow-hidden">
       {/* Background subtle gold ambient glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#c59941]/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-ouro/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="w-full max-w-md relative z-10">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 transition-all uppercase tracking-wider mb-4 sm:mb-6 bg-white hover:bg-slate-50 px-3.5 py-2 rounded-full border border-slate-200 shadow-sm"
+          className="inline-flex items-center gap-2 text-xs font-bold text-texto-secundario hover:text-texto-principal transition-all uppercase tracking-wider mb-4 sm:mb-6 bg-fundo-card hover:bg-fundo-elevado/60 px-3.5 py-2 rounded-full border border-borda-sutil shadow-sm"
         >
           <ArrowLeft size={14} />
           Voltar ao início
         </Link>
 
-        <div className="bg-white rounded-3xl p-4 sm:p-8 shadow-xl shadow-slate-200/50 animar-entrar-baixo border border-slate-200/80">
+        <div className="bg-fundo-card rounded-3xl p-4 sm:p-8 shadow-xl shadow-black/30 animar-entrar-baixo border border-borda-sutil">
           {/* Cabeçalho */}
-          <div className="flex items-center gap-3.5 sm:gap-4 mb-6 pb-5 sm:pb-6 border-b border-slate-100">
-            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-[#c59941] to-[#9a7228] text-[#0e1422] flex items-center justify-center shadow-md shadow-[#c59941]/20 shrink-0">
+          <div className="flex items-center gap-3.5 sm:gap-4 mb-6 pb-5 sm:pb-6 border-b border-borda-sutil">
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-gradient-to-br from-ouro to-ouro-classico text-azul-900 flex items-center justify-center shadow-md shadow-ouro/20 shrink-0">
               <Ticket className="w-6 h-6 transform -rotate-12" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-black font-titulo text-slate-900 tracking-tight">
+              <h1 className="titulo-display text-4xl sm:text-5xl text-texto-principal">
                 Criar Conta
               </h1>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Cadastre-se na Cinética Ingressos para garantir seus ingressos
+              <p className="text-xs text-texto-secundario mt-0.5">
+                Cadastre-se na Cinética para comprar na loja, participar dos sorteios e garantir ingressos
               </p>
             </div>
           </div>
@@ -345,7 +345,7 @@ export default function PaginaCadastro() {
                     carregando={enviandoCodigo}
                     disabled={!email || !email.includes('@') || enviandoCodigo || (email === emailEnviado && tempoReenvio > 0)}
                     onClick={enviarCodigoValidacao}
-                    className="shrink-0 h-[46px] text-xs px-3.5 border-slate-200 hover:border-[#c59941] text-slate-700 hover:text-slate-900 whitespace-nowrap w-full sm:w-auto"
+                    className="shrink-0 h-[46px] text-xs px-3.5 border-borda-sutil hover:border-ouro text-texto-secundario hover:text-texto-principal whitespace-nowrap w-full sm:w-auto"
                   >
                     {email === emailEnviado && tempoReenvio > 0 ? `Aguarde ${tempoReenvio}s` : codigoEnviado ? 'Reenviar' : 'Verificar'}
                   </Botao>
@@ -353,14 +353,14 @@ export default function PaginaCadastro() {
               </div>
 
               {!emailVerificado && email.includes('@') && !codigoEnviado && (
-                <p className="text-[11px] font-semibold text-amber-700 flex items-center gap-1.5 pt-0.5">
+                <p className="text-[11px] font-semibold text-amber-300 flex items-center gap-1.5 pt-0.5">
                   <span>Clique em <strong>"Verificar"</strong> para receber o código no seu e-mail.</span>
                 </p>
               )}
 
               {/* Status de E-mail Verificado */}
               {emailVerificado && (
-                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-700 animar-entrar-escala">
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs font-bold text-emerald-300 animar-entrar-escala">
                   <ShieldCheck size={16} className="shrink-0" />
                   <span>E-mail verificado com sucesso!</span>
                 </div>
@@ -368,9 +368,9 @@ export default function PaginaCadastro() {
 
               {/* Caixa para Digitar e Confirmar Código (OTP) */}
               {codigoEnviado && !emailVerificado && (
-                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3 animar-entrar-baixo">
-                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                    <KeyRound size={14} className="text-[#c59941] shrink-0" />
+                <div className="p-3.5 rounded-2xl bg-fundo-elevado/60 border border-borda-sutil space-y-3 animar-entrar-baixo">
+                  <label className="text-xs font-bold text-texto-secundario flex items-center gap-1.5">
+                    <KeyRound size={14} className="text-ouro shrink-0" />
                     <span>Digite o código de 6 dígitos enviado para seu e-mail:</span>
                   </label>
 
@@ -381,7 +381,7 @@ export default function PaginaCadastro() {
                       placeholder="000000"
                       value={codigo}
                       onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ''))}
-                      className="flex-1 min-w-0 bg-white border border-slate-300 rounded-xl px-3 sm:px-4 py-2.5 text-center text-base sm:text-lg font-black font-mono tracking-widest text-slate-900 focus:outline-none focus:border-[#c59941]"
+                      className="flex-1 min-w-0 bg-fundo-card border border-borda-media rounded-xl px-3 sm:px-4 py-2.5 text-center text-base sm:text-lg font-black font-mono tracking-widest text-texto-principal focus:outline-none focus:border-ouro"
                     />
 
                     <Botao
@@ -470,12 +470,12 @@ export default function PaginaCadastro() {
 
 
           {/* Rodapé */}
-          <div className="mt-6 sm:mt-8 pt-5 sm:pt-6 border-t border-slate-100 text-center">
-            <p className="text-xs text-slate-500">
+          <div className="mt-6 sm:mt-8 pt-5 sm:pt-6 border-t border-borda-sutil text-center">
+            <p className="text-xs text-texto-secundario">
               Já tem uma conta?{' '}
               <Link
                 href="/autenticacao/entrar"
-                className="text-[#c59941] hover:text-[#9a7228] hover:underline font-bold transition-colors ml-1 inline-block"
+                className="text-ouro hover:text-destaque hover:underline font-bold transition-colors ml-1 inline-block"
               >
                 Entrar
               </Link>

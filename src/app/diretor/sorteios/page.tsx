@@ -1,7 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Gift, Plus, Edit, Trash2, Trophy, Upload, AlertTriangle, Minus } from 'lucide-react';
+import { Gift, Plus, Edit, Trash2, Trophy, Upload, AlertTriangle, Ticket } from 'lucide-react';
+import GerenciarBilhetes from '@/componentes/sorteios/GerenciarBilhetes';
 import Botao from '@/componentes/ui/Botao';
 import CampoTexto from '@/componentes/ui/CampoTexto';
 import Modal from '@/componentes/ui/Modal';
@@ -15,11 +16,13 @@ import { formatarDataHora, formatarMoeda } from '@/lib/utilitarios';
 import {
   STATUS_SORTEIO_ROTULO,
   calcularProgressoCotas,
+  ehErroTabelaSorteiosAusente,
   ordenarSorteios,
   validarFormularioSorteio,
   type FormularioSorteio,
 } from '@/lib/sorteios';
 import type { Sorteio, StatusSorteio } from '@/tipos';
+import { traduzirErroBanco } from '@/lib/errosBanco';
 
 const TIPOS_IMAGEM = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
@@ -87,6 +90,7 @@ export default function PaginaSorteiosDiretor() {
   const [salvando, setSalvando] = useState(false);
   const [enviandoImagem, setEnviandoImagem] = useState(false);
   const [paraExcluir, setParaExcluir] = useState<Sorteio | null>(null);
+  const [bilhetesDe, setBilhetesDe] = useState<Sorteio | null>(null);
 
   const carregar = useCallback(async () => {
     if (!perfil) {
@@ -94,7 +98,7 @@ export default function PaginaSorteiosDiretor() {
       return;
     }
     setCarregando(true);
-    const idAtl = perfil.atletica_id || (perfil.role === 'admin' ? await obterIdAtleticaCinetica(supabase) : null);
+    const idAtl = await obterIdAtleticaCinetica(supabase);
     setAtleticaId(idAtl);
 
     if (!idAtl) {
@@ -109,8 +113,13 @@ export default function PaginaSorteiosDiretor() {
       .eq('atletica_id', idAtl)
       .order('data_sorteio', { ascending: false });
 
-    if (error) {
-      notificarErro('Erro ao carregar sorteios', 'Verifique se a migração 033 foi aplicada no banco.');
+    if (error && ehErroTabelaSorteiosAusente(error)) {
+      notificarErro(
+        'Módulo de sorteios não instalado',
+        'A tabela "sorteios" não existe no banco. Rode supabase/migracoes/033_hardening_seguranca_e_sorteios.sql no SQL Editor do Supabase.'
+      );
+    } else if (error) {
+      notificarErro('Erro ao carregar sorteios', 'Tente novamente em instantes.');
     }
     setSorteios(ordenarSorteios(((data || []) as Sorteio[]).map((s) => ({ ...s, valor_cota: Number(s.valor_cota) }))));
     setCarregando(false);
@@ -178,8 +187,11 @@ export default function PaginaSorteiosDiretor() {
     try {
       if (editandoId) {
         const anterior = sorteios.find((s) => s.id === editandoId);
+        // cotas_vendidas é mantida pelo banco a partir dos bilhetes emitidos
+        const { cotas_vendidas: _ignorado, ...semCotas } = resultado.dados;
+        void _ignorado;
         const dados = {
-          ...resultado.dados,
+          ...semCotas,
           apurado_em: resultado.dados.status === 'encerrado' ? anterior?.apurado_em || resultado.dados.apurado_em : null,
         };
         const { error } = await supabase.from('sorteios').update(dados).eq('id', editandoId);
@@ -188,28 +200,17 @@ export default function PaginaSorteiosDiretor() {
       } else {
         const { error } = await supabase
           .from('sorteios')
-          .insert({ ...resultado.dados, atletica_id: atleticaId, criado_por: perfil?.id || null });
+          .insert({ ...resultado.dados, cotas_vendidas: 0, atletica_id: atleticaId, criado_por: perfil?.id || null });
         if (error) throw error;
         sucesso('Sorteio criado', resultado.dados.status === 'rascunho' ? 'Salvo como rascunho.' : 'Já está visível na vitrine.');
       }
       setModalAberto(false);
       await carregar();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Erro ao salvar';
+      const msg = traduzirErroBanco(err, 'salvar o sorteio');
       notificarErro('Não foi possível salvar', msg);
     } finally {
       setSalvando(false);
-    }
-  }
-
-  async function ajustarCotas(s: Sorteio, delta: number) {
-    const novo = Math.min(s.total_cotas, Math.max(0, s.cotas_vendidas + delta));
-    if (novo === s.cotas_vendidas) return;
-    setSorteios((lista) => lista.map((x) => (x.id === s.id ? { ...x, cotas_vendidas: novo } : x)));
-    const { error } = await supabase.from('sorteios').update({ cotas_vendidas: novo }).eq('id', s.id);
-    if (error) {
-      notificarErro('Erro ao atualizar cotas', error.message);
-      carregar();
     }
   }
 
@@ -244,7 +245,7 @@ export default function PaginaSorteiosDiretor() {
       </div>
 
       {!atleticaId ? (
-        <EstadoVazio titulo="Atlética não vinculada" descricao="Seu perfil ainda não está vinculado a uma atlética ativa." icone={<AlertTriangle className="w-7 h-7" />} />
+        <EstadoVazio titulo="Atlética Cinética não cadastrada" descricao="Cadastre a atlética na aba Atlética Cinética para criar sorteios." icone={<AlertTriangle className="w-7 h-7" />} />
       ) : sorteios.length === 0 ? (
         <EstadoVazio
           titulo="Nenhum sorteio ainda"
@@ -285,9 +286,7 @@ export default function PaginaSorteiosDiretor() {
                       <div className="h-full bg-[#c59941]" style={{ width: `${progresso}%` }} />
                     </div>
                     <div className="flex items-center gap-1.5 pt-1">
-                      <button aria-label="Remover cota" onClick={() => ajustarCotas(s, -1)} className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-100"><Minus size={13} /></button>
-                      <button aria-label="Adicionar cota" onClick={() => ajustarCotas(s, 1)} className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-100"><Plus size={13} /></button>
-                      <button onClick={() => ajustarCotas(s, 10)} className="h-8 px-2 rounded-lg border border-slate-200 text-xs font-bold hover:bg-slate-100">+10</button>
+                      <Botao tamanho="sm" icone={<Ticket size={13} />} onClick={() => setBilhetesDe(s)}>Bilhetes</Botao>
                       <div className="flex-1" />
                       <Botao tamanho="sm" variante="contorno" icone={<Edit size={13} />} onClick={() => abrirEdicao(s)}>Editar</Botao>
                       <Botao tamanho="sm" variante="perigo" icone={<Trash2 size={13} />} onClick={() => setParaExcluir(s)} aria-label="Excluir sorteio" />
@@ -308,10 +307,9 @@ export default function PaginaSorteiosDiretor() {
           <CampoTexto rotulo="Prêmio principal" obrigatorio value={form.premio_principal} onChange={(e) => atualizar('premio_principal', e.target.value)} erro={erros.premio_principal} maxLength={300} />
           <CampoTexto multilinha rotulo="Prêmios secundários (um por linha)" value={form.premios_secundarios} onChange={(e) => atualizar('premios_secundarios', e.target.value)} rows={3} />
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <CampoTexto rotulo="Valor da cota (R$)" obrigatorio inputMode="decimal" value={form.valor_cota} onChange={(e) => atualizar('valor_cota', e.target.value)} erro={erros.valor_cota} />
-            <CampoTexto rotulo="Total de cotas" obrigatorio type="number" min={1} value={form.total_cotas} onChange={(e) => atualizar('total_cotas', e.target.value)} erro={erros.total_cotas} />
-            <CampoTexto rotulo="Cotas vendidas" type="number" min={0} value={form.cotas_vendidas} onChange={(e) => atualizar('cotas_vendidas', e.target.value)} erro={erros.cotas_vendidas} />
+            <CampoTexto rotulo="Total de cotas" obrigatorio type="number" min={1} value={form.total_cotas} onChange={(e) => atualizar('total_cotas', e.target.value)} erro={erros.total_cotas} dica={editandoId ? `${form.cotas_vendidas} já emitida(s) em bilhetes.` : 'As cotas vendidas são contadas pelos bilhetes registrados.'} />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -368,9 +366,19 @@ export default function PaginaSorteiosDiretor() {
         </div>
       </Modal>
 
+      <Modal
+        aberto={!!bilhetesDe}
+        aoFechar={() => setBilhetesDe(null)}
+        titulo="Bilhetes do sorteio"
+        descricao={bilhetesDe?.titulo}
+        tamanho="lg"
+      >
+        {bilhetesDe && <GerenciarBilhetes sorteio={bilhetesDe} aoAlterar={carregar} />}
+      </Modal>
+
       <Modal aberto={!!paraExcluir} aoFechar={() => setParaExcluir(null)} titulo="Excluir sorteio" tamanho="sm">
         <p className="text-sm text-slate-600 mb-4">
-          Tem certeza que deseja excluir <strong>{paraExcluir?.titulo}</strong>? Esta ação não pode ser desfeita.
+          Tem certeza que deseja excluir <strong>{paraExcluir?.titulo}</strong>? Os bilhetes emitidos também serão apagados. Esta ação não pode ser desfeita.
         </p>
         <div className="flex justify-end gap-2">
           <Botao variante="contorno" onClick={() => setParaExcluir(null)}>Cancelar</Botao>

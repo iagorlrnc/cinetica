@@ -5,6 +5,7 @@ import { criarClienteNavegador } from '@/lib/supabase/cliente';
 import type { User, AuthChangeEvent, Session } from '@supabase/supabase-js';
 import type { Perfil } from '@/tipos';
 import { formatarCidadeEstado, traduzirErroAuth } from '@/lib/utilitarios';
+import { obterUrlSite } from '@/lib/dominios';
 
 export interface MetadadosCadastro {
   telefone?: string | null;
@@ -40,6 +41,8 @@ interface ContextoAuthType {
   entrarComGoogle: (redirecionarPara?: string) => Promise<void>;
   recuperarSenha: (email: string, turnstileToken?: string) => Promise<ResultadoAuth>;
   redefinirSenha: (novaSenha: string) => Promise<ResultadoAuth>;
+  /** Recarrega o perfil do banco (após editar dados na Minha conta). */
+  recarregarPerfil: () => Promise<void>;
 }
 
 const ContextoAuth = createContext<ContextoAuthType | null>(null);
@@ -132,7 +135,13 @@ export function ProvedorAutenticacao({ children }: { children: React.ReactNode }
     }
   }, [supabase]);
 
-
+  const recarregarPerfil = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      setUsuario(user);
+      await buscarPerfil(user.id, user.user_metadata);
+    }
+  }, [supabase, buscarPerfil]);
 
   useEffect(() => {
     const inicializar = async () => {
@@ -409,9 +418,7 @@ export function ProvedorAutenticacao({ children }: { children: React.ReactNode }
   const entrarComGoogle = async (redirecionarPara?: string) => {
     try {
       const origens = typeof window !== 'undefined' ? window.location.origin : '';
-      const protocolo = process.env.NEXT_PUBLIC_PROTOCOLO || 'https';
-      const dominio = (process.env.NEXT_PUBLIC_DOMINIO_PRINCIPAL || 'meuingrss.com.br').replace(/\/+$/, '');
-      const urlRedirecionamento = origens || `${protocolo}://${dominio}`;
+      const urlRedirecionamento = origens || obterUrlSite();
 
       const callbackUrl = new URL(`${urlRedirecionamento}/autenticacao/callback`);
       if (redirecionarPara && redirecionarPara !== '/') {
@@ -457,9 +464,7 @@ export function ProvedorAutenticacao({ children }: { children: React.ReactNode }
 
     try {
       const origens = typeof window !== 'undefined' ? window.location.origin : '';
-      const protocolo = process.env.NEXT_PUBLIC_PROTOCOLO || 'https';
-      const dominio = (process.env.NEXT_PUBLIC_DOMINIO_PRINCIPAL || 'meuingrss.com.br').replace(/\/+$/, '');
-      const urlBase = origens || `${protocolo}://${dominio}`;
+      const urlBase = origens || obterUrlSite();
       const urlRedirecionamento = `${urlBase}/autenticacao/redefinir-senha`;
 
       const { error } = await supabase.auth.resetPasswordForEmail(emailNorm, {
@@ -521,6 +526,7 @@ export function ProvedorAutenticacao({ children }: { children: React.ReactNode }
         entrarComGoogle,
         recuperarSenha,
         redefinirSenha,
+        recarregarPerfil,
       }}
     >
       {children}

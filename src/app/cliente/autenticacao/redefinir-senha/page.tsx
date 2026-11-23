@@ -197,30 +197,30 @@ function FormularioRedefinirSenha() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-3 sm:p-6 relative overflow-hidden bg-[#fafafa]">
+    <div className="min-h-screen flex items-center justify-center p-3 sm:p-6 relative overflow-hidden bg-fundo-principal">
       {/* Background subtle gold ambient glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#c59941]/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-ouro/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="w-full max-w-md relative z-10">
         <Link
           href="/autenticacao/entrar"
-          className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 transition-all uppercase tracking-wider mb-4 sm:mb-6 bg-white hover:bg-slate-50 px-3.5 py-2 rounded-full border border-slate-200 shadow-sm"
+          className="inline-flex items-center gap-2 text-xs font-bold text-texto-secundario hover:text-texto-principal transition-all uppercase tracking-wider mb-4 sm:mb-6 bg-fundo-card hover:bg-fundo-elevado/60 px-3.5 py-2 rounded-full border border-borda-sutil shadow-sm"
         >
           <ArrowLeft size={14} />
           Voltar ao login
         </Link>
 
-        <div className="bg-white rounded-3xl p-5 sm:p-8 shadow-xl shadow-slate-200/50 animar-entrar-baixo border border-slate-200/80">
+        <div className="bg-fundo-card rounded-3xl p-5 sm:p-8 shadow-xl shadow-black/30 animar-entrar-baixo border border-borda-sutil">
           {/* Cabeçalho */}
-          <div className="flex items-center gap-3.5 mb-6 sm:mb-8 pb-5 border-b border-slate-100">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#c59941] to-[#9a7228] text-[#0e1422] flex items-center justify-center shadow-md shadow-[#c59941]/20 shrink-0">
+          <div className="flex items-center gap-3.5 mb-6 sm:mb-8 pb-5 border-b border-borda-sutil">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-ouro to-ouro-classico text-azul-900 flex items-center justify-center shadow-md shadow-ouro/20 shrink-0">
               <KeyRound className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-xl font-bold font-titulo text-slate-900">
+              <h1 className="titulo-display text-4xl text-texto-principal">
                 Nova Senha
               </h1>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-texto-secundario mt-0.5">
                 Crie uma senha forte e segura
               </p>
             </div>
@@ -233,15 +233,15 @@ function FormularioRedefinirSenha() {
           ) : sucesso ? (
             /* Estado de Sucesso */
             <div className="text-center space-y-5 py-2 animar-entrar-baixo">
-              <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center mx-auto text-emerald-600 shadow-sm">
+              <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto text-emerald-400 shadow-sm">
                 <CheckCircle2 size={36} />
               </div>
 
               <div className="space-y-2">
-                <h2 className="text-lg font-bold font-titulo text-slate-900">
+                <h2 className="text-lg font-bold font-titulo text-texto-principal">
                   Senha alterada com sucesso!
                 </h2>
-                <p className="text-xs text-slate-600 leading-relaxed max-w-sm mx-auto">
+                <p className="text-xs text-texto-secundario leading-relaxed max-w-sm mx-auto">
                   Sua nova senha já está ativa. Você pode agora fazer login com as novas credenciais.
                 </p>
               </div>
@@ -260,15 +260,15 @@ function FormularioRedefinirSenha() {
           ) : !sessaoValida ? (
             /* Link Inválido ou Expirado */
             <div className="text-center space-y-5 py-2 animar-entrar-baixo">
-              <div className="w-16 h-16 rounded-2xl bg-red-50 border border-red-200 flex items-center justify-center mx-auto text-red-600 shadow-sm">
+              <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center mx-auto text-red-400 shadow-sm">
                 <AlertCircle size={36} />
               </div>
 
               <div className="space-y-2">
-                <h2 className="text-lg font-bold font-titulo text-slate-900">
+                <h2 className="text-lg font-bold font-titulo text-texto-principal">
                   Link Inválido ou Expirado
                 </h2>
-                <p className="text-xs text-slate-600 leading-relaxed max-w-sm mx-auto">
+                <p className="text-xs text-texto-secundario leading-relaxed max-w-sm mx-auto">
                   {erro || 'O link de recuperação que você utilizou já foi usado ou expirou por motivos de segurança.'}
                 </p>
               </div>
@@ -285,7 +285,7 @@ function FormularioRedefinirSenha() {
 
                 <Link
                   href="/autenticacao/entrar"
-                  className="block text-center text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors py-2"
+                  className="block text-center text-xs font-bold text-texto-secundario hover:text-texto-principal transition-colors py-2"
                 >
                   Voltar para tela de login
                 </Link>
@@ -294,8 +294,8 @@ function FormularioRedefinirSenha() {
           ) : (
             /* Formulário de Nova Senha */
             <form onSubmit={aoSubmeter} className="space-y-4 sm:space-y-5">
-              <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center gap-2">
-                <ShieldCheck size={16} className="shrink-0 text-[#c59941]" />
+              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 flex items-center gap-2">
+                <ShieldCheck size={16} className="shrink-0 text-ouro" />
                 <span>Link validado com segurança. Digite sua nova senha abaixo.</span>
               </div>
 
@@ -322,7 +322,7 @@ function FormularioRedefinirSenha() {
               <IndicadorForcaSenha senha={novaSenha} />
 
               {erro && (
-                <div className="p-3 sm:p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs font-semibold text-red-600 leading-relaxed flex items-center gap-2">
+                <div className="p-3 sm:p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-xs font-semibold text-red-400 leading-relaxed flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-red-500 animate-ping shrink-0" />
                   <span>{erro}</span>
                 </div>

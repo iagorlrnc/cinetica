@@ -14,28 +14,33 @@ interface BotaoProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   larguraTotal?: boolean;
 }
 
+/**
+ * Botões da identidade Cinética: formato pílula, dourado vivo com texto azul-marinho
+ * e um "degrau" 3D no estilo festivo. Todos usam tokens, então funcionam tanto no
+ * tema escuro público quanto no painel claro.
+ */
 const estilosVariante: Record<VarianteBotao, string> = {
   primario:
-    'bg-[#c59941] hover:bg-[#b08535] text-white font-extrabold uppercase tracking-wider shadow-sm hover:shadow-md active:scale-[0.98]',
+    'bg-ouro text-azul-950 hover:bg-ouro-vivo font-titulo font-extrabold shadow-[0_3px_0_#8a6a1f] hover:-translate-y-px active:translate-y-0.5 active:shadow-none',
   festiva:
-    'bg-gradient-to-r from-[#c59941] via-[#d4af37] to-[#9a7228] hover:brightness-105 text-white font-black uppercase tracking-wider shadow-md hover:shadow-lg active:scale-[0.98]',
+    'bg-ouro text-azul-950 hover:bg-ouro-vivo font-titulo font-extrabold shadow-[0_5px_0_#8a6a1f] hover:-translate-y-0.5 hover:shadow-[0_7px_0_#8a6a1f] active:translate-y-1 active:shadow-[0_1px_0_#8a6a1f]',
   secundario:
-    'bg-[#121826] text-[#f4d68a] hover:bg-[#1a2337] border border-[#c59941]/30 font-black uppercase tracking-wider active:scale-[0.98]',
+    'bg-azul-800 text-ouro-claro hover:bg-azul-700 border border-ouro/30 font-titulo font-extrabold',
   fantasma:
-    'bg-transparent text-slate-700 hover:bg-slate-200/70 hover:text-slate-950 font-bold',
+    'bg-transparent text-texto-secundario hover:bg-fundo-hover hover:text-texto-principal font-bold',
   perigo:
-    'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 active:scale-[0.98]',
+    'bg-red-500/10 text-red-500 border border-red-500/30 hover:bg-red-500/20 font-bold',
   sucesso:
-    'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 active:scale-[0.98]',
+    'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 hover:bg-emerald-500/20 font-bold',
   contorno:
-    'bg-transparent border border-[#c59941] text-[#9a7228] hover:bg-[#c59941]/10 active:scale-[0.98] font-bold uppercase tracking-wide',
+    'bg-transparent border-2 border-ouro text-destaque hover:bg-ouro hover:text-azul-950 font-titulo font-extrabold',
 };
 
 const estilosTamanho: Record<TamanhoBotao, string> = {
-  sm: 'px-3.5 py-2 text-xs gap-1.5 rounded-lg font-bold min-h-[38px]',
-  md: 'px-4 py-2.5 text-sm gap-2 rounded-xl font-bold min-h-[44px]',
-  lg: 'px-6 py-3 text-sm font-black gap-2.5 rounded-xl uppercase tracking-wider min-h-[48px]',
-  xl: 'px-8 py-3.5 text-base font-black gap-3 rounded-2xl uppercase tracking-wider min-h-[52px]',
+  sm: 'px-4 py-2 text-xs gap-1.5 min-h-[38px]',
+  md: 'px-5 py-2.5 text-sm gap-2 min-h-[44px]',
+  lg: 'px-7 py-3 text-base gap-2.5 min-h-[50px]',
+  xl: 'px-9 py-4 text-lg gap-3 min-h-[58px]',
 };
 
 const Botao = memo(
@@ -59,8 +64,8 @@ const Botao = memo(
           ref={ref}
           disabled={disabled || carregando}
           className={cn(
-            'inline-flex items-center justify-center font-semibold transition-all duration-200 cursor-pointer touch-manipulation select-none active:scale-[0.98]',
-            'disabled:opacity-50 disabled:cursor-not-allowed',
+            'inline-flex items-center justify-center rounded-full transition-all duration-150 cursor-pointer touch-manipulation select-none',
+            'disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0',
             estilosVariante[variante],
             estilosTamanho[tamanho],
             larguraTotal && 'w-full',
@@ -75,20 +80,10 @@ const Botao = memo(
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
+                aria-hidden="true"
               >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                />
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
               <span>Carregando...</span>
             </>

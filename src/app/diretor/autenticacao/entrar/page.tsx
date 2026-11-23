@@ -25,7 +25,6 @@ import CaptchaCloudflare from '@/componentes/ui/CaptchaCloudflare';
 
 import { construirUrl } from '@/lib/dominios';
 import { sanitizarRedirecionamento } from '@/lib/validacoes';
-import { obterIdAtleticaCinetica } from '@/lib/atleticaCinetica';
 
 function FormularioEntrarDiretor() {
   const { entrar } = usarAutenticacao();
@@ -35,7 +34,7 @@ function FormularioEntrarDiretor() {
   });
   const searchParams = useSearchParams();
   const router = useRouter();
-  const redirecionar = sanitizarRedirecionamento(searchParams.get('redirecionar'));
+  const redirecionar = sanitizarRedirecionamento(searchParams.get('redirecionar'), construirUrl('diretor', '/'));
   const urlSitePrincipal = construirUrl('cliente', '/');
 
   const [email, setEmail] = useState('');
@@ -87,7 +86,7 @@ function FormularioEntrarDiretor() {
     }
 
     // 2. Realiza a tentativa de autenticação
-    const resultado = await entrar(email, senha);
+    const resultado = await entrar(email, senha, 'geral', turnstileToken);
 
     if (resultado.erro) {
       // Caso a senha esteja errada ou haja erro de login, verifica se a conta está pendente para dar o aviso correto
@@ -131,7 +130,7 @@ function FormularioEntrarDiretor() {
     if (user) {
       const { data: perfil } = await supabase
         .from('profiles')
-        .select('role, status, atletica_id')
+        .select('role, status')
         .eq('id', user.id)
         .single();
 
@@ -148,16 +147,6 @@ function FormularioEntrarDiretor() {
         await supabase.auth.signOut();
         setCarregando(false);
         return;
-      }
-
-      // role / atletica_id só podem ser alterados pelo administrador (protegido por trigger no banco).
-      // Admin sem atlética vinculada é associado automaticamente à Atlética Cinética.
-      if (perfil?.role === 'admin' && !perfil.atletica_id) {
-        const idCin = await obterIdAtleticaCinetica(supabase);
-        if (idCin) {
-          await supabase.from('profiles').update({ atletica_id: idCin }).eq('id', user.id);
-          perfil.atletica_id = idCin;
-        }
       }
 
       if (!perfil || perfil.status !== 'ativo' || (perfil.role !== 'diretor' && perfil.role !== 'admin')) {
@@ -193,7 +182,7 @@ function FormularioEntrarDiretor() {
           <div className="max-w-xl space-y-6">
             <h1 className="text-4xl xl:text-5xl font-black font-titulo text-slate-900 leading-tight tracking-tight">
               <span className="text-slate-500">Gerencie sua Atlética com </span>{' '}
-              <span className="bg-gradient-to-r from-[#c59941] via-[#d4af37] to-[#9a7228] bg-clip-text text-transparent">
+              <span className="text-[#c59941]">
                 Painel Executivo
               </span>
             </h1>
@@ -290,7 +279,7 @@ function FormularioEntrarDiretor() {
 
             <div className="flex justify-end -mt-1 sm:-mt-2">
               <Link
-                href="/autenticacao/recuperar-senha"
+                href={construirUrl('cliente', '/autenticacao/recuperar-senha')}
                 className="text-xs font-semibold text-[#9a7228] hover:text-[#c59941] hover:underline transition-colors"
               >
                 Esqueci minha senha
@@ -345,7 +334,7 @@ function FormularioEntrarDiretor() {
             <p className="text-xs text-slate-500">
               Sua atlética ainda não tem cadastro?{' '}
               <Link
-                href="/autenticacao/cadastro"
+                href={construirUrl('diretor', '/autenticacao/cadastro')}
                 className="text-[#9a7228] hover:text-[#c59941] underline font-bold transition-colors ml-1 inline-block"
               >
                 Cadastrar Atlética

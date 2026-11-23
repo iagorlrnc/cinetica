@@ -1,5 +1,6 @@
 'use client';
 
+import { construirUrl } from '@/lib/dominios';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Cartao from '@/componentes/ui/Cartao';
@@ -97,7 +98,7 @@ export default function PaginaGestaoEventos() {
                 {filtrados.map(e => (
                   <tr key={e.id} className="border-b border-borda-sutil/50 hover:bg-fundo-hover/50 transition-colors">
                     <td className="px-6 py-4 text-sm font-medium">
-                      <Link href={`/eventos/${e.slug || e.id}`} target="_blank" className="hover:underline hover:text-[#c59941] transition-colors">
+                      <Link href={construirUrl('cliente', `/eventos/${e.slug || e.id}`)} target="_blank" className="hover:underline hover:text-[#c59941] transition-colors">
                         {e.titulo}
                       </Link>
                     </td>

@@ -22,58 +22,55 @@ export default function Logo({
   aoClicar,
 }: LogoProps) {
   const dimensoes = {
-    sm: { w: 32, h: 32, caixa: 'w-8 h-8 rounded-lg' },
-    md: { w: 40, h: 40, caixa: 'w-8 h-8 sm:w-10 sm:h-10 rounded-xl' },
-    lg: { w: 48, h: 48, caixa: 'w-12 h-12 rounded-2xl' },
+    sm: { w: 40, h: 40, caixa: 'w-9 h-9' },
+    md: { w: 48, h: 48, caixa: 'w-10 h-10 sm:w-12 sm:h-12' },
+    lg: { w: 64, h: 64, caixa: 'w-14 h-14' },
   }[tamanhoIcone];
 
   const estilosTextoMarca = {
-    sm: 'text-base font-black tracking-tight font-titulo leading-none',
-    md: 'text-lg sm:text-xl font-black tracking-tight font-titulo leading-none',
-    lg: 'text-xl sm:text-2xl font-black tracking-tight font-titulo leading-none',
-    xl: 'text-2xl sm:text-3xl font-black tracking-tight font-titulo leading-none',
+    sm: 'text-[15px]',
+    md: 'text-[14px] min-[400px]:text-[16px] sm:text-lg',
+    lg: 'text-xl sm:text-2xl',
+    xl: 'text-2xl sm:text-3xl',
   }[tamanhoTexto];
 
   const conteudo = (
-    <div className={cn('flex items-center gap-2.5 group shrink-0', className)}>
+    <div className={cn('flex items-center gap-3 group shrink-0', className)}>
       <div
         className={cn(
-          'relative bg-[#121826] border border-[#c59941]/40 p-0.5 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform shrink-0 overflow-hidden',
+          'relative rounded-full bg-azul-950 overflow-hidden shrink-0 shadow-[0_6px_18px_-6px_rgba(0,0,0,0.8)] transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-105',
           dimensoes.caixa
         )}
       >
         <Image
           src="/cinetica-logo.png"
-          alt="Atlética Cinética Logo"
+          alt="Atlética Cinética"
           width={dimensoes.w}
           height={dimensoes.h}
-          className="w-full h-full object-contain"
+          className="w-full h-full object-cover scale-[1.12]"
           priority
         />
       </div>
-      <div className="flex flex-col">
-        <span className={cn('text-slate-900 flex items-center gap-1', estilosTextoMarca)}>
-          Cinética
-          <span className="text-[#c59941] text-[10px] font-black uppercase tracking-wider not-italic px-1.5 py-0.5 rounded bg-[#c59941]/10 border border-[#c59941]/25 ml-0.5">
-            Fisio
-          </span>
+      <div className="flex flex-col justify-center leading-none">
+        <span
+          className={cn(
+            'font-titulo font-extrabold uppercase tracking-[0.03em] sm:tracking-[0.06em] text-texto-principal whitespace-nowrap leading-none transition-colors group-hover:text-ouro',
+            estilosTextoMarca
+          )}
+        >
+          Atlética Cinética
         </span>
-        {subtitulo ? (
-          <span className="block text-[10px] text-slate-500 font-sans not-italic font-normal tracking-normal mt-0.5">
-            {subtitulo}
-          </span>
-        ) : (
-          <span className="block text-[10px] text-slate-500 font-sans not-italic font-medium tracking-normal">
-            A.A.A.F.A.
-          </span>
-        )}
+        <span className="mt-1.5 flex items-center gap-1.5 text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.22em] text-texto-terciario">
+          <span className="w-3 h-px bg-ouro" aria-hidden="true" />
+          {subtitulo || 'Afya · Fisioterapia'}
+        </span>
       </div>
     </div>
   );
 
   if (href) {
     return (
-      <Link href={href} onClick={aoClicar} className="shrink-0">
+      <Link href={href} onClick={aoClicar} className="shrink-0" aria-label="Cinética: página inicial">
         {conteudo}
       </Link>
     );

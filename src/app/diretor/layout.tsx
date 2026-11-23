@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname, useRouter } from 'next/navigation';
+import { construirUrl, navegarPara } from '@/lib/dominios';import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import MenuLateralDiretor from '@/componentes/layout/MenuLateralDiretor';
 import { usarAutenticacao } from '@/contextos/ContextoAutenticacao';
@@ -21,7 +21,7 @@ export default function LayoutDiretor({
     if (!carregando && !ehPaginaAutenticacao) {
       if (perfil?.status === 'pendente') {
         sair().then(() => {
-          router.push('/autenticacao/entrar?pendente=1');
+          navegarPara(construirUrl('diretor', '/autenticacao/entrar?pendente=1'), router.push);
         });
       } else if (
         !usuario ||
@@ -29,7 +29,7 @@ export default function LayoutDiretor({
         perfil.status !== 'ativo' ||
         (perfil.role !== 'diretor' && perfil.role !== 'admin')
       ) {
-        router.push('/autenticacao/entrar');
+        navegarPara(construirUrl('diretor', '/autenticacao/entrar'), router.push);
       }
     }
   }, [carregando, usuario, perfil, ehPaginaAutenticacao, router, sair]);

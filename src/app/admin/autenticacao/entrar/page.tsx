@@ -21,7 +21,7 @@ function FormularioEntrarAdmin() {
     setErro('');
   });
   const searchParams = useSearchParams();
-  const redirecionar = sanitizarRedirecionamento(searchParams.get('redirecionar'));
+  const redirecionar = sanitizarRedirecionamento(searchParams.get('redirecionar'), construirUrl('admin', '/'));
   const urlSitePrincipal = construirUrl('cliente', '/');
 
   const [email, setEmail] = useState('');
@@ -37,7 +37,7 @@ function FormularioEntrarAdmin() {
     setErro('');
     setCarregando(true);
 
-    const resultado = await entrar(email, senha, 'admin');
+    const resultado = await entrar(email, senha, 'admin', turnstileToken);
 
     if (resultado.erro) {
       if (resultado.rateLimitData?.bloqueado || resultado.bloqueado) {
@@ -110,7 +110,7 @@ function FormularioEntrarAdmin() {
             <CampoTexto
               rotulo="Email administrativo"
               type="email"
-              placeholder="admin@meuingrss.com.br"
+              placeholder="admin@email.com"
               value={email}
               onChange={(e) => setEmail((e.target as HTMLInputElement).value)}
               icone={<Mail size={18} />}
@@ -129,7 +129,7 @@ function FormularioEntrarAdmin() {
 
             <div className="flex justify-end -mt-1 sm:-mt-2">
               <Link
-                href="/autenticacao/recuperar-senha"
+                href={construirUrl('cliente', '/autenticacao/recuperar-senha')}
                 className="text-xs font-semibold text-[#9a7228] hover:text-[#c59941] hover:underline transition-colors"
               >
                 Esqueci minha senha

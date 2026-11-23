@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Checkout — Pagamento de Ingresso | Cinética Ingressos',
+  title: 'Checkout — Pagamento de Ingresso | Cinética',
   robots: {
     index: false,
     follow: false,

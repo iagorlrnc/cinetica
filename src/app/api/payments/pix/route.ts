@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
         transaction_amount: valores.totalFinal,
         description: `${evento.titulo} — ${lote.nome_lote} (${quantidade}x)`.slice(0, 200),
         payment_method_id: 'pix',
-        statement_descriptor: 'MEUINGRSS',
+        statement_descriptor: 'CINETICA',
         payer,
         external_reference: pedido.pedidoId,
         notification_url: obterUrlWebhook(),

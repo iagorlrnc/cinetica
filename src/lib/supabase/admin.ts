@@ -5,7 +5,7 @@ export function criarClienteAdmin() {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
   return createClient(
-    url || 'https://meuingrss.supabase.co',
+    url || 'https://placeholder.supabase.co',
     serviceKey,
     {
       auth: {

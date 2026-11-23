@@ -63,7 +63,7 @@ export async function gerarPdfIngresso(
   });
 
   const larguraPagina = doc.internal.pageSize.getWidth();
-  const nomeComprador = ingresso.comprador?.nome || nomeUsuarioFallBack || 'Cliente MeuIngrss';
+  const nomeComprador = ingresso.comprador?.nome || nomeUsuarioFallBack || 'Cliente Cinética';
   const emailComprador = ingresso.comprador?.email || emailUsuarioFallBack || '—';
   const cpfRaw = ingresso.comprador?.cpf || cpfUsuarioFallBack;
   const cpfMascarado = mascararCPF(cpfRaw);
@@ -73,14 +73,14 @@ export async function gerarPdfIngresso(
   doc.rect(0, 0, larguraPagina, 28, 'F');
 
   // Faixa decorativa em gradiente / cor de destaque
-  doc.setFillColor(255, 190, 0); // #ffbe00 (Dourado MeuIngrss)
+  doc.setFillColor(255, 190, 0); // #ffbe00 (dourado)
   doc.rect(0, 26, larguraPagina, 2, 'F');
 
-  // Marca / Logo MeuIngrss
+  // Marca / Logo Cinética
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
-  doc.text('MeuIngrss', 15, 18);
+  doc.text('Cinética', 15, 18);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
@@ -266,7 +266,7 @@ export async function gerarPdfIngresso(
   const agora = new Date();
   const dataEmitida = agora.toLocaleDateString('pt-BR');
   const horaEmitida = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  doc.text(`MeuIngrss Plataforma de Bilheteria - Emitido em ${dataEmitida} às ${horaEmitida}`, 15, posY + 6);
+  doc.text(`Cinética Ingressos - Emitido em ${dataEmitida} às ${horaEmitida}`, 15, posY + 6);
   const codigoCurto = `#ING-${ingresso.id.substring(0, 8).toUpperCase()}`;
   doc.text(`Nº do Ingresso: ${codigoCurto}`, larguraPagina - 15, posY + 6, { align: 'right' });
 

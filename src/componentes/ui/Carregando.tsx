@@ -34,12 +34,12 @@ export default function Carregando({
     <div className={cn('flex flex-col items-center justify-center gap-3.5 select-none', className)}>
       <div className="relative flex items-center justify-center">
         {/* Glow dourado pulsante ao fundo */}
-        <div className="absolute -inset-2 rounded-3xl bg-gradient-to-r from-[#c59941]/30 via-[#f4d68a]/30 to-[#dc2626]/20 blur-xl animate-pulse pointer-events-none" />
+        <div className="absolute -inset-2 rounded-3xl bg-gradient-to-r from-ouro/30 via-ouro-claro/30 to-red-500/20 blur-xl animate-pulse pointer-events-none" />
         
         {/* Container do ícone */}
         <div
           className={cn(
-            'relative rounded-2xl bg-white/95 border border-slate-200 shadow-xl backdrop-blur-xl flex items-center justify-center',
+            'relative rounded-2xl bg-fundo-card/95 border border-borda-sutil shadow-xl backdrop-blur-xl flex items-center justify-center',
             tamanhosContainer[tamanho]
           )}
         >
@@ -47,14 +47,14 @@ export default function Carregando({
           <div className="animate-spin flex items-center justify-center transform-gpu">
             <Ticket
               size={tamanhosIcone[tamanho]}
-              className="text-[#c59941] drop-shadow-[0_0_8px_rgba(197,153,65,0.4)] transform -rotate-12"
+              className="text-ouro drop-shadow-[0_0_8px_rgba(197,153,65,0.4)] transform -rotate-12"
             />
           </div>
         </div>
       </div>
 
       {texto && (
-        <p className="text-xs sm:text-sm font-bold tracking-wide text-slate-800 animate-pulse text-center">
+        <p className="text-xs sm:text-sm font-bold tracking-wide text-texto-principal animate-pulse text-center">
           {texto}
         </p>
       )}
@@ -63,7 +63,7 @@ export default function Carregando({
 
   if (telaCheia) {
     return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-white/85 backdrop-blur-md transition-all duration-300">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-fundo-card/85 backdrop-blur-md transition-all duration-300">
         {conteudo}
       </div>
     );

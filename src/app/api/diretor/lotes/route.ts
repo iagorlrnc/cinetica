@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { criarClienteAdmin } from '@/lib/supabase/admin';
-import { obterSessaoApi, ehGestorAtivo, podeGerenciarAtletica } from '@/lib/autenticacaoApi';
+import { obterSessaoApi, ehGestorAtivo } from '@/lib/autenticacaoApi';
 import { logger } from '@/lib/logger';
 import { ehUuid, MENSAGEM_ERRO_INTERNO } from '@/lib/seguranca';
 
@@ -40,10 +40,6 @@ export async function POST(request: NextRequest) {
     const { data: evento } = await supabase.from('eventos').select('id, atletica_id').eq('id', evento_id).maybeSingle();
     if (!evento) {
       return NextResponse.json({ erro: 'Evento não encontrado.' }, { status: 404 });
-    }
-    if (!podeGerenciarAtletica(sessao.perfil, evento.atletica_id)) {
-      logger.security('Tentativa não autorizada de gerenciar lote de outra atlética', { userId: sessao.user.id, eventoId: evento_id });
-      return NextResponse.json({ erro: 'Você não tem permissão para gerenciar lotes deste evento.' }, { status: 403 });
     }
 
     const dados = {
@@ -135,12 +131,6 @@ export async function DELETE(request: NextRequest) {
 
     if (!lote) {
       return NextResponse.json({ erro: 'Lote não encontrado' }, { status: 404 });
-    }
-
-    const eventoRel = lote.eventos as { atletica_id?: string } | { atletica_id?: string }[] | null;
-    const atleticaEvento = Array.isArray(eventoRel) ? eventoRel[0]?.atletica_id : eventoRel?.atletica_id;
-    if (!podeGerenciarAtletica(sessao.perfil, atleticaEvento)) {
-      return NextResponse.json({ erro: 'Você não tem permissão para excluir este lote' }, { status: 403 });
     }
 
     if (lote.quantidade_vendida > 0) {

@@ -111,12 +111,14 @@ export async function POST(request: NextRequest) {
 
     // 4. Limpeza da tabela de rate limit distribuído
     const { data: rateLimitsRemovidos } = await supabase.rpc('limpar_rate_limits');
+    const { data: sorteiosExpirados } = await supabase.rpc('expirar_pedidos_sorteio');
 
     return NextResponse.json({
       sucesso: true,
       ingressos_expirados: totalExpirados,
       pedidos_expirados: totalPedidosExpirados,
       pedidos_loja_expirados: lojaExpirados?.length || 0,
+      pedidos_sorteio_expirados: Number(sorteiosExpirados) || 0,
       rate_limits_removidos: typeof rateLimitsRemovidos === 'number' ? rateLimitsRemovidos : 0,
       executado_em: new Date().toISOString(),
     });
@@ -133,7 +135,7 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({
     status: 'ok',
-    servico: 'Cron de expiração de pedidos meuingrss',
+    servico: 'Cron de expiração de pedidos Cinética',
     descricao: 'Envie um POST com Authorization: Bearer {CRON_SECRET} para executar',
   });
 }

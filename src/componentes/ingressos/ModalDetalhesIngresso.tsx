@@ -99,7 +99,7 @@ export default function ModalDetalhesIngresso({
       <div className="absolute inset-0 bg-black/80 backdrop-blur-md animar-entrar-escala" />
 
       {/* Container Principal do Modal de Ingresso */}
-      <div className="relative w-full max-w-lg bg-[#0e1422] text-slate-100 rounded-3xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] border border-[#c59941]/30 overflow-hidden flex flex-col my-auto max-h-[92vh] animar-entrar-baixo">
+      <div className="relative w-full max-w-lg bg-azul-900 text-slate-100 rounded-3xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] border border-ouro/30 overflow-hidden flex flex-col my-auto max-h-[92vh] animar-entrar-baixo">
 
         {/* Header Visual estilo Passe de Evento (Ticket Header) */}
         <div className="relative shrink-0 overflow-hidden bg-slate-900 min-h-[160px] sm:min-h-[190px]">
@@ -110,7 +110,7 @@ export default function ModalDetalhesIngresso({
                 alt={ingresso.evento.titulo}
                 className="w-full h-full object-cover filter brightness-[0.75]"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0d1117] via-[#0d1117]/60 to-black/30" />
+              <div className="absolute inset-0 bg-gradient-to-t from-azul-950 via-azul-950/60 to-black/30" />
             </div>
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-primaria-900/80 via-slate-900 to-secundaria-900/70" />
@@ -180,15 +180,15 @@ export default function ModalDetalhesIngresso({
         </div>
 
         {/* Divisor Visual de Picote de Ingresso (Ticket Stub Tear Line) */}
-        <div className="relative h-6 bg-[#0d1117] flex items-center justify-center overflow-hidden shrink-0">
+        <div className="relative h-6 bg-azul-950 flex items-center justify-center overflow-hidden shrink-0">
           {/* Recorte Circular Esquerdo */}
-          <div className="absolute -left-3 w-6 h-6 rounded-full bg-[#000000] border border-slate-700/60 z-10" />
+          <div className="absolute -left-3 w-6 h-6 rounded-full bg-azul-950 border border-slate-700/60 z-10" />
           
           {/* Linha Tracejada de Picote */}
           <div className="w-full mx-6 border-b-2 border-dashed border-slate-700/70" />
           
           {/* Recorte Circular Direito */}
-          <div className="absolute -right-3 w-6 h-6 rounded-full bg-[#000000] border border-slate-700/60 z-10" />
+          <div className="absolute -right-3 w-6 h-6 rounded-full bg-azul-950 border border-slate-700/60 z-10" />
         </div>
 
         {/* Corpo Scrollável do Modal */}
@@ -197,7 +197,7 @@ export default function ModalDetalhesIngresso({
           {/* Cartão de Validação e QR Code Principal */}
           <div className="relative rounded-2xl bg-gradient-to-b from-slate-900 to-slate-950 p-5 border border-slate-800 text-center shadow-xl flex flex-col items-center">
             {/* Container do QR Code */}
-            <div className="relative p-4 rounded-2xl bg-white shadow-[0_0_35px_rgba(197,153,65,0.25)] border-4 border-[#0e1422] transition-transform duration-300 hover:scale-[1.02] mb-3">
+            <div className="relative p-4 rounded-2xl bg-[#ffffff] shadow-[0_0_35px_rgba(197,153,65,0.25)] border-4 border-azul-900 transition-transform duration-300 hover:scale-[1.02] mb-3">
               {qrCodeUrl ? (
                 <img
                   src={qrCodeUrl}
@@ -205,7 +205,7 @@ export default function ModalDetalhesIngresso({
                   className="w-48 h-48 sm:w-56 sm:h-56 mx-auto object-contain"
                 />
               ) : (
-                <div className="w-48 h-48 sm:w-56 sm:h-56 flex flex-col items-center justify-center gap-2 text-slate-600">
+                <div className="w-48 h-48 sm:w-56 sm:h-56 flex flex-col items-center justify-center gap-2 text-texto-secundario">
                   <Loader2 className="w-8 h-8 animate-spin text-primaria-500" />
                   <span className="text-xs">Gerando QR Code...</span>
                 </div>
@@ -224,7 +224,7 @@ export default function ModalDetalhesIngresso({
             
             {/* Bloco Titular */}
             <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
-              <div className="flex items-center text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800/80 pb-2">
+              <div className="flex items-center text-xs font-bold text-texto-terciario uppercase tracking-wider border-b border-slate-800/80 pb-2">
                 <span className="flex items-center gap-1.5">
                   <User size={14} className="text-primaria-400" />
                   Titular do Ingresso
@@ -234,11 +234,11 @@ export default function ModalDetalhesIngresso({
                 <p className="text-sm font-bold text-slate-100 truncate">
                   {nomeComprador}
                 </p>
-                <p className="text-xs text-slate-400 truncate">
+                <p className="text-xs text-texto-terciario truncate">
                   {emailComprador}
                 </p>
                 {cpfMascarado && (
-                  <p className="text-xs font-mono text-slate-400 truncate mt-1">
+                  <p className="text-xs font-mono text-texto-terciario truncate mt-1">
                     CPF: <span className="text-slate-200">{cpfMascarado}</span>
                   </p>
                 )}
@@ -247,7 +247,7 @@ export default function ModalDetalhesIngresso({
 
             {/* Bloco Lote e Valor */}
             <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
-              <div className="flex items-center text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800/80 pb-2">
+              <div className="flex items-center text-xs font-bold text-texto-terciario uppercase tracking-wider border-b border-slate-800/80 pb-2">
                 <span className="flex items-center gap-1.5">
                   <Ticket size={14} className="text-secundaria-400" />
                   Detalhes do Lote
@@ -281,7 +281,7 @@ export default function ModalDetalhesIngresso({
             {mostrarRegras && (
               <div className="px-4 pb-4 pt-1 text-xs text-slate-300 space-y-2 border-t border-slate-800/80">
                 {ingresso.evento?.descricao ? (
-                  <p className="leading-relaxed whitespace-pre-line text-slate-400 mb-3">
+                  <p className="leading-relaxed whitespace-pre-line text-texto-terciario mb-3">
                     {ingresso.evento.descricao}
                   </p>
                 ) : null}
@@ -312,7 +312,7 @@ export default function ModalDetalhesIngresso({
           <button
             onClick={() => onBaixarPdf(ingresso)}
             disabled={estaGerandoPdf}
-            className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-[#c59941] to-[#9a7228] hover:brightness-105 text-[#0e1422] font-black text-sm shadow-lg shadow-[#c59941]/25 transition-all min-h-[46px] touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99]"
+            className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-ouro to-ouro-classico hover:brightness-105 text-azul-900 font-black text-sm shadow-lg shadow-ouro/25 transition-all min-h-[46px] touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.99]"
           >
             {estaGerandoPdf ? (
               <>

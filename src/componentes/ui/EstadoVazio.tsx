@@ -20,11 +20,11 @@ export default function EstadoVazio({
   className,
 }: EstadoVazioProps) {
   return (
-    <Cartao variante="vidro" className={`text-center py-12 px-6 ${className || ''}`}>
-      <div className="w-14 h-14 rounded-2xl bg-fundo-input border border-borda-sutil flex items-center justify-center mx-auto mb-4 text-texto-terciario">
+    <Cartao variante="contorno" className={`text-center py-14 px-6 border-dashed ${className || ''}`}>
+      <div className="w-16 h-16 rounded-2xl bg-ouro/15 border border-ouro/30 flex items-center justify-center mx-auto mb-5 text-ouro -rotate-6">
         {icone || <Inbox className="w-7 h-7" />}
       </div>
-      <h3 className="text-lg font-bold font-titulo text-texto-principal mb-1">
+      <h3 className="text-2xl font-extrabold font-titulo text-texto-principal mb-2">
         {titulo}
       </h3>
       <p className="text-sm text-texto-secundario max-w-sm mx-auto mb-6">

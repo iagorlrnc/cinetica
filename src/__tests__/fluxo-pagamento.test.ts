@@ -1,5 +1,5 @@
 /**
- * Testes Unitários do Fluxo de Pagamento — meuingrss
+ * Testes Unitários do Fluxo de Pagamento — Cinética
  *
  * Estes testes validam a lógica de segurança do fluxo de pagamento
  * sem depender de banco de dados ou APIs externas.

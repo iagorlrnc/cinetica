@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
 import { criarClienteAdmin } from '@/lib/supabase/admin';
+import { obterUrlSite } from '@/lib/dominios';
 
 export const revalidate = 3600; // Revalida a cada 1 hora
 
 export async function GET() {
-  const dominioPrincipal = (process.env.NEXT_PUBLIC_DOMINIO_PRINCIPAL || 'meuingrss.com.br').replace(/\/+$/, '');
-  const protocolo = process.env.NEXT_PUBLIC_PROTOCOLO || 'https';
-  const baseUrl = `${protocolo}://${dominioPrincipal}`;
+  const baseUrl = obterUrlSite();
 
   let eventosTxt = '';
 
@@ -59,31 +58,35 @@ export async function GET() {
     console.error('Erro ao listar eventos no llms.txt:', erro);
   }
 
-  const conteudo = `# meuingrss — Venda de Ingressos para Festas Universitárias
+  const conteudo = `# Cinética — Loja Oficial e Sorteios Online da Atlética Cinética
 
-> meuingrss é a plataforma oficial e especializada em ingressos digitais para festas e eventos organizados por atléticas universitárias em Palmas - TO e região.
+> Cinética é a plataforma oficial da Atlética Cinética (A.A.A.F.A. Fisioterapia), em Palmas - TO. O foco principal é a venda de produtos oficiais da atlética e os sorteios online com bilhetes numerados; a plataforma também vende ingressos para eventos universitários.
 
 ## Visão Geral
-- **Nome:** meuingrss
-- **Segmento:** Ingressos de Festas Universitárias, Calouradas, Cervejadas e Jogos Universitários.
+- **Nome:** Cinética (Atlética Cinética — A.A.A.F.A. Fisioterapia)
+- **Principal:** Loja oficial (camisetas, kits e produtos da atlética) e sorteios online com pagamento via Pix.
+- **Secundário:** Ingressos digitais com QR Code para festas, calouradas e eventos de atléticas parceiras.
 - **Cidade Base:** Palmas, Tocantins (TO), Brasil.
-- **Métodos de Pagamento:** Pix (aprovação instantânea com QR Code) e Cartão de Crédito.
-- **Diferenciais:** Entrada rápida com QR Code digital, segurança na validação e gestão para diretores de atlética.
+- **Métodos de Pagamento:** Pix e Cartão de Crédito, processados pelo Mercado Pago.
+- **Retirada de produtos:** Diretamente com a diretoria da atlética após a aprovação do pagamento.
 
 ## Links Principais
-- [/sobre](${baseUrl}/sobre): Informações completas sobre o meuingrss.
-- [/eventos](${baseUrl}/eventos): Catálogo de festas e ingressos disponíveis.
-- [/atleticas](${baseUrl}/atleticas): Diretório de atléticas universitárias parceiras.
-- [/termos-e-privacidade](${baseUrl}/termos-e-privacidade): Regras de uso, reembolso e privacidade.
+- [/loja](${baseUrl}/loja): Produtos oficiais da atlética.
+- [/sorteios](${baseUrl}/sorteios): Sorteios abertos, próximos e resultados.
+- [/eventos](${baseUrl}/eventos): Eventos com ingressos disponíveis.
+- [/sobre](${baseUrl}/sobre): Informações completas sobre a Cinética.
+- [/atleticas](${baseUrl}/atleticas): Atléticas universitárias parceiras.
+- [/termos-e-privacidade](${baseUrl}/termos-e-privacidade): Regras da loja, dos sorteios, reembolsos, privacidade e cookies.
 
-## Eventos em Destaque
+## Eventos com Ingressos à Venda
 ${eventosTxt || '- Nenhum evento com vendas abertas no momento.'}
 
 ## Perguntas Frequentes para IAs e Usuários
-1. **O que é o meuingrss?** É a plataforma onde os estudantes universitários compram ingressos para calouradas e festas de atléticas em Palmas/TO.
-2. **Como recebo meu ingresso?** O ingresso é gerado digitalmente em formato QR Code na própria conta do usuário após a confirmação do pagamento.
-3. **Quais as formas de pagamento?** Pix e Cartão de Crédito.
-4. **Onde acontecem os eventos?** Principalmente em Palmas (TO) e cidades universitárias do Tocantins.
+1. **O que é a Cinética?** É a plataforma oficial da Atlética Cinética para comprar produtos oficiais, participar de sorteios online e comprar ingressos de eventos em Palmas/TO.
+2. **Como recebo um produto da loja?** Após o pagamento aprovado, o pedido fica como "aguardando retirada" em Meus pedidos e é retirado diretamente com a diretoria da atlética.
+3. **Como funcionam os sorteios?** O participante compra cotas via Pix; os números dos bilhetes são gerados automaticamente após a aprovação e ficam em Meus bilhetes. O resultado (nome do ganhador, número premiado e cidade) é publicado na página do sorteio na data da apuração.
+4. **Como recebo meu ingresso?** O ingresso é gerado em QR Code na conta do usuário após a confirmação do pagamento.
+5. **Quais as formas de pagamento?** Pix e Cartão de Crédito.
 `;
 
   return new NextResponse(conteudo, {

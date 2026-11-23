@@ -12,6 +12,7 @@ import Modal from '@/componentes/ui/Modal';
 import CampoTexto from '@/componentes/ui/CampoTexto';
 import Carregando from '@/componentes/ui/Carregando';
 import type { ProdutoLoja, CategoriaProdutoLoja } from '@/tipos';
+import { traduzirErroBanco } from '@/lib/errosBanco';
 import {
   ShoppingCart,
   Plus,
@@ -27,6 +28,8 @@ import {
   AlertTriangle,
   Upload,
   X,
+  Minus,
+  Copy,
   ExternalLink,
 } from 'lucide-react';
 
@@ -75,10 +78,7 @@ export default function PaginaProdutosDiretor() {
   async function carregarProdutos() {
     setCarregando(true);
     try {
-      let idAtletica = perfil?.atletica_id;
-      if (!idAtletica) {
-        idAtletica = (await obterIdAtleticaCinetica(supabase)) || undefined;
-      }
+      const idAtletica = (await obterIdAtleticaCinetica(supabase)) || undefined;
 
       let query = supabase
         .from('store_products')
@@ -225,7 +225,7 @@ export default function PaginaProdutosDiretor() {
 
     } catch (err: unknown) {
       console.error('Erro no upload de imagem:', err);
-      const msg = err instanceof Error ? err.message : 'Não foi possível enviar o arquivo.';
+      const msg = traduzirErroBanco(err, 'enviar o arquivo');
       mostrarNotificacao({
         tipo: 'erro',
         titulo: 'Falha no upload',
@@ -239,6 +239,43 @@ export default function PaginaProdutosDiretor() {
 
 
   // Alterna status Ativo/Inativo (Soft Delete)
+  // Ajuste rápido de estoque direto na lista
+  async function ajustarEstoque(prod: ProdutoLoja, delta: number) {
+    const novo = Math.max(0, prod.stock_quantity + delta);
+    if (novo === prod.stock_quantity) return;
+    setProdutos((prev) => prev.map((p) => (p.id === prod.id ? { ...p, stock_quantity: novo } : p)));
+    const { error } = await supabase
+      .from('store_products')
+      .update({ stock_quantity: novo, updated_at: new Date().toISOString() })
+      .eq('id', prod.id);
+    if (error) {
+      setProdutos((prev) => prev.map((p) => (p.id === prod.id ? { ...p, stock_quantity: prod.stock_quantity } : p)));
+      mostrarNotificacao({ tipo: 'erro', titulo: 'Erro ao ajustar estoque', mensagem: traduzirErroBanco(error, 'ajustar o estoque') });
+    }
+  }
+
+  // Cria uma cópia inativa do produto para editar e publicar depois
+  async function duplicarProduto(prod: ProdutoLoja) {
+    const { error } = await supabase.from('store_products').insert({
+      name: `${prod.name} (cópia)`.slice(0, 200),
+      description: prod.description,
+      category: prod.category,
+      price: prod.price,
+      stock_quantity: prod.stock_quantity,
+      is_active: false,
+      sizes: prod.sizes,
+      images: prod.images,
+      atletica_id: prod.atletica_id,
+      created_by: perfil?.id,
+    });
+    if (error) {
+      mostrarNotificacao({ tipo: 'erro', titulo: 'Erro ao duplicar', mensagem: traduzirErroBanco(error, 'duplicar o produto') });
+      return;
+    }
+    mostrarNotificacao({ tipo: 'sucesso', titulo: 'Produto duplicado', mensagem: 'A cópia foi criada inativa. Edite e ative quando quiser.' });
+    await carregarProdutos();
+  }
+
   async function toggleStatusProduto(prod: ProdutoLoja) {
     const novoStatus = !prod.is_active;
 
@@ -265,7 +302,7 @@ export default function PaginaProdutosDiretor() {
       mostrarNotificacao({
         tipo: 'erro',
         titulo: 'Erro ao alterar status',
-        mensagem: err?.message || 'Falha ao atualizar produto.',
+        mensagem: traduzirErroBanco(err, 'atualizar o produto'),
       });
     }
   }
@@ -274,16 +311,12 @@ export default function PaginaProdutosDiretor() {
   async function handleSalvar(e: React.FormEvent) {
     e.preventDefault();
 
-    let atleticaId = perfil?.atletica_id;
+    const atleticaId = await obterIdAtleticaCinetica(supabase);
     if (!atleticaId) {
-      atleticaId = (await obterIdAtleticaCinetica(supabase)) || undefined;
-    }
-
-    if (!atleticaId && perfil?.role !== 'admin') {
       mostrarNotificacao({
         tipo: 'erro',
         titulo: 'Atlética não encontrada',
-        mensagem: 'Não foi possível vincular o produto à Atlética Cinética.',
+        mensagem: 'Cadastre a Atlética Cinética no banco antes de criar produtos.',
       });
       return;
     }
@@ -352,7 +385,7 @@ export default function PaginaProdutosDiretor() {
       mostrarNotificacao({
         tipo: 'erro',
         titulo: 'Erro ao salvar produto',
-        mensagem: err?.message || 'Ocorreu um erro ao gravar os dados do produto.',
+        mensagem: traduzirErroBanco(err, 'salvar o produto'),
       });
     } finally {
       setSalvando(false);
@@ -497,8 +530,33 @@ export default function PaginaProdutosDiretor() {
                         Preço: <strong className="text-texto-principal">{formatarMoeda(preco)}</strong>
                       </span>
                       <span>•</span>
-                      <span>
-                        Estoque: <strong className={prod.stock_quantity <= 3 ? "text-amber-400" : "text-texto-principal"}>{prod.stock_quantity} un.</strong>
+                      <span className="inline-flex items-center gap-1.5">
+                        Estoque:
+                        <button
+                          type="button"
+                          onClick={() => ajustarEstoque(prod, -1)}
+                          disabled={prod.stock_quantity <= 0}
+                          aria-label={`Diminuir estoque de ${prod.name}`}
+                          className="w-6 h-6 rounded-md border border-borda-media flex items-center justify-center hover:bg-fundo-hover disabled:opacity-30 cursor-pointer"
+                        >
+                          <Minus size={12} />
+                        </button>
+                        <strong className={prod.stock_quantity <= 3 ? 'text-amber-500' : 'text-texto-principal'}>{prod.stock_quantity} un.</strong>
+                        <button
+                          type="button"
+                          onClick={() => ajustarEstoque(prod, 1)}
+                          aria-label={`Aumentar estoque de ${prod.name}`}
+                          className="w-6 h-6 rounded-md border border-borda-media flex items-center justify-center hover:bg-fundo-hover cursor-pointer"
+                        >
+                          <Plus size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => ajustarEstoque(prod, 10)}
+                          className="h-6 px-1.5 rounded-md border border-borda-media text-[10px] font-bold hover:bg-fundo-hover cursor-pointer"
+                        >
+                          +10
+                        </button>
                       </span>
                       {prod.sizes && prod.sizes.length > 0 && (
                         <>
@@ -534,6 +592,9 @@ export default function PaginaProdutosDiretor() {
                   >
                     Editar
                   </Botao>
+                  <Botao variante="fantasma" tamanho="sm" onClick={() => duplicarProduto(prod)} icone={<Copy size={15} />} title="Criar uma cópia inativa">
+                    Duplicar
+                  </Botao>
                 </div>
               </Cartao>
             );
@@ -565,7 +626,7 @@ export default function PaginaProdutosDiretor() {
         <form onSubmit={handleSalvar} className="space-y-5">
           <CampoTexto
             rotulo="Nome do Produto *"
-            placeholder="Ex: Caneca Alumínio 500ml Atlética Furiosa"
+            placeholder="Ex: Caneca Alumínio 500ml Cinética"
             value={nome}
             onChange={(e) => setNome((e.target as HTMLInputElement).value)}
             required

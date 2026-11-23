@@ -1,13 +1,17 @@
 import type { MetadataRoute } from 'next';
+import { obterUrlSite } from '@/lib/dominios';
 
 export default function robots(): MetadataRoute.Robots {
-  const dominioPrincipal = (process.env.NEXT_PUBLIC_DOMINIO_PRINCIPAL || 'meuingrss.com.br').replace(/\/+$/, '');
-  const protocolo = process.env.NEXT_PUBLIC_PROTOCOLO || 'https';
-  const baseUrl = `${protocolo}://${dominioPrincipal}`;
+  const baseUrl = obterUrlSite();
 
   const rotasPrivadas = [
     '/meus-ingressos',
+    '/meus-bilhetes',
+    '/minha-conta',
     '/checkout',
+    '/loja/carrinho',
+    '/loja/checkout',
+    '/loja/meus-pedidos',
     '/autenticacao/',
     '/diretor/',
     '/admin/',

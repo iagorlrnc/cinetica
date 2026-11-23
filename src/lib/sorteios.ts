@@ -161,3 +161,98 @@ export function validarFormularioSorteio(
     },
   };
 }
+
+/** Colunas públicas lidas da tabela `sorteios` (com dados de contato da atlética). */
+export const COLUNAS_SORTEIO_PUBLICO =
+  'id, atletica_id, titulo, subtitulo, descricao, premio_principal, premios_secundarios, valor_cota, total_cotas, cotas_vendidas, data_sorteio, status, destaque, imagem_url, regulamento, forma_apuracao, ganhador_nome, ganhador_bilhete, ganhador_cidade, apurado_em, criado_em, atualizado_em, atletica:atleticas(id, nome, chave_pix, whatsapp, instagram, logo_url)';
+
+type LinhaSorteioBanco = Omit<Sorteio, 'atletica'> & {
+  atletica: Sorteio['atletica'] | NonNullable<Sorteio['atletica']>[];
+};
+
+/** Normaliza uma linha vinda do Supabase (numeric como string, relação como array). */
+export function normalizarSorteio(linha: LinhaSorteioBanco): Sorteio {
+  return {
+    ...linha,
+    valor_cota: Number(linha.valor_cota) || 0,
+    total_cotas: Number(linha.total_cotas) || 0,
+    cotas_vendidas: Number(linha.cotas_vendidas) || 0,
+    premios_secundarios: Array.isArray(linha.premios_secundarios) ? linha.premios_secundarios : [],
+    atletica: Array.isArray(linha.atletica) ? linha.atletica[0] ?? null : linha.atletica ?? null,
+  };
+}
+
+/**
+ * Indica que a tabela `sorteios` ainda não existe no banco (migração 033 não aplicada).
+ * PGRST205 = tabela fora do cache do PostgREST; 42P01 = relação inexistente no Postgres.
+ */
+export function ehErroTabelaSorteiosAusente(erro: { code?: string | null } | null | undefined): boolean {
+  return erro?.code === 'PGRST205' || erro?.code === '42P01';
+}
+
+// ------------------------------------------------------------------------------
+// Bilhetes na conta do participante (migração 034)
+// ------------------------------------------------------------------------------
+
+export interface BilheteSorteio {
+  id: string;
+  sorteio_id: string;
+  numero: number;
+  criado_em: string;
+}
+
+export interface BilheteDiretoria {
+  id: string;
+  numero: number;
+  usuario_nome: string;
+  usuario_email: string;
+  observacao: string | null;
+  criado_em: string;
+}
+
+export const MAX_BILHETES_POR_REGISTRO = 100;
+
+/** Número com zeros à esquerda no tamanho do total de cotas (ex.: 7 de 1000 → "0007"). */
+export function formatarNumeroBilhete(numero: number, totalCotas: number): string {
+  const largura = Math.max(2, String(Math.max(1, Math.trunc(totalCotas))).length);
+  return String(Math.max(0, Math.trunc(numero))).padStart(largura, '0');
+}
+
+/** Compara o número do bilhete com o "bilhete ganhador" digitado pela diretoria (ignora zeros à esquerda). */
+export function ehBilhetePremiado(numero: number, ganhadorBilhete: string | null | undefined): boolean {
+  const digitos = (ganhadorBilhete || '').replace(/\D/g, '');
+  if (!digitos) return false;
+  return Number(digitos) === numero;
+}
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+/** Valida os dados do formulário de registro de bilhetes (a RPC repete as regras no banco). */
+export function validarRegistroBilhetes(entrada: {
+  email: string;
+  quantidade: string | number;
+  restantes: number;
+}): { ok: true; email: string; quantidade: number } | { ok: false; erro: string } {
+  const email = entrada.email.trim().toLowerCase();
+  if (!EMAIL_REGEX.test(email) || email.length > 254) return { ok: false, erro: 'Informe o e-mail da conta do participante.' };
+  const quantidade = typeof entrada.quantidade === 'number' ? entrada.quantidade : parseInt(entrada.quantidade, 10);
+  if (!Number.isInteger(quantidade) || quantidade < 1) return { ok: false, erro: 'Quantidade inválida.' };
+  if (quantidade > MAX_BILHETES_POR_REGISTRO) return { ok: false, erro: `Máximo de ${MAX_BILHETES_POR_REGISTRO} bilhetes por registro.` };
+  if (quantidade > entrada.restantes) return { ok: false, erro: `Só restam ${Math.max(0, entrada.restantes)} cotas.` };
+  return { ok: true, email, quantidade };
+}
+
+const ERROS_BILHETE: Record<string, string> = {
+  sem_permissao: 'Você não tem permissão para gerenciar este sorteio.',
+  quantidade_invalida: 'Quantidade inválida (1 a 100).',
+  sorteio_nao_encontrado: 'Sorteio não encontrado.',
+  sorteio_nao_ativo: 'Só é possível registrar bilhetes em sorteios ativos.',
+  usuario_nao_encontrado: 'Nenhuma conta com esse e-mail. Peça para a pessoa criar a conta no site primeiro.',
+  cotas_insuficientes: 'Não há cotas suficientes para essa quantidade.',
+  bilhete_nao_encontrado: 'Bilhete não encontrado.',
+  sorteio_encerrado: 'O sorteio já foi encerrado; os bilhetes não podem mais ser alterados.',
+};
+
+export function traduzirErroBilhete(codigo: string | null | undefined): string {
+  return (codigo && ERROS_BILHETE[codigo]) || 'Não foi possível concluir. Tente novamente.';
+}

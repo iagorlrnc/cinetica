@@ -61,10 +61,3 @@ export function ehAdminAtivo(perfil: PerfilApi | null | undefined): boolean {
 export function ehGestorAtivo(perfil: PerfilApi | null | undefined): boolean {
   return Boolean(perfil && (perfil.role === 'diretor' || perfil.role === 'admin') && perfil.status === 'ativo');
 }
-
-/** Diretor só gerencia a própria atlética; admin gerencia todas. */
-export function podeGerenciarAtletica(perfil: PerfilApi | null | undefined, atleticaId: string | null | undefined): boolean {
-  if (!ehGestorAtivo(perfil)) return false;
-  if (perfil!.role === 'admin') return true;
-  return Boolean(atleticaId && perfil!.atletica_id && perfil!.atletica_id === atleticaId);
-}

@@ -92,17 +92,17 @@ function ContadorPix({
   }
 
   return (
-    <div className="flex items-center justify-between p-3 sm:p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-      <div className="flex items-center gap-2 text-xs text-slate-600">
-        <Clock size={16} className="text-[#c59941] shrink-0" />
+    <div className="flex items-center justify-between p-3 sm:p-3.5 rounded-xl bg-fundo-elevado/60 border border-borda-sutil">
+      <div className="flex items-center gap-2 text-xs text-texto-secundario">
+        <Clock size={16} className="text-ouro shrink-0" />
         Expira em:
       </div>
       {segundosRestantes !== null && segundosRestantes > 0 ? (
-        <span className="font-mono text-xs sm:text-sm font-bold text-[#c59941]">
+        <span className="font-mono text-xs sm:text-sm font-bold text-ouro">
           {formatarTempo(segundosRestantes)}
         </span>
       ) : (
-        <span className="text-xs font-bold text-red-500 flex items-center gap-1">
+        <span className="text-xs font-bold text-red-400 flex items-center gap-1">
           QR Code Expirado
         </span>
       )}
@@ -303,7 +303,7 @@ export default function CheckoutTransparente({
     return {
       amount: Number(totalFinal.toFixed(2)),
       payer: {
-        email: (usuario.email && usuario.email.includes('@')) ? usuario.email : 'comprador@meuingrss.com.br',
+        email: (usuario.email && usuario.email.includes('@')) ? usuario.email : 'comprador@example.com',
         identification: (docLimpo.length === 11 || docLimpo.length === 14) ? {
           type: docLimpo.length === 14 ? 'CNPJ' : 'CPF',
           number: docLimpo,
@@ -341,14 +341,14 @@ export default function CheckoutTransparente({
   return (
     <div className="w-full space-y-4 sm:space-y-6">
       {/* Seletor de Métodos de Pagamento (Responsivo) */}
-      <div className="grid grid-cols-2 gap-2 sm:gap-3 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl bg-white border border-slate-200 shadow-sm">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl bg-fundo-card border border-borda-sutil shadow-sm">
         <button
           type="button"
           onClick={() => setMetodo('pix')}
           className={`flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 sm:py-3 px-2 sm:px-4 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ${
             metodo === 'pix'
-              ? 'bg-gradient-to-r from-[#c59941] to-[#9a7228] text-[#0e1422] font-black shadow-md shadow-[#c59941]/25'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              ? 'bg-gradient-to-r from-ouro to-ouro-classico text-azul-900 font-black shadow-md shadow-ouro/25'
+              : 'text-texto-secundario hover:text-texto-principal hover:bg-fundo-elevado'
           }`}
         >
           <QrCode size={16} className="shrink-0 sm:w-[18px] sm:h-[18px]" />
@@ -360,8 +360,8 @@ export default function CheckoutTransparente({
           onClick={() => setMetodo('cartao')}
           className={`flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 sm:py-3 px-2 sm:px-4 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ${
             metodo === 'cartao'
-              ? 'bg-gradient-to-r from-[#c59941] to-[#9a7228] text-[#0e1422] font-black shadow-md shadow-[#c59941]/25'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              ? 'bg-gradient-to-r from-ouro to-ouro-classico text-azul-900 font-black shadow-md shadow-ouro/25'
+              : 'text-texto-secundario hover:text-texto-principal hover:bg-fundo-elevado'
           }`}
         >
           <CreditCard size={16} className="shrink-0 sm:w-[18px] sm:h-[18px]" />
@@ -445,7 +445,7 @@ export default function CheckoutTransparente({
                     <>
                       {dadosPix.qr_code_base64 && (
                         <div className="flex flex-col items-center justify-center gap-2">
-                          <div className="p-2.5 sm:p-3 bg-white rounded-xl sm:rounded-2xl shadow-xl border border-white/20 inline-block">
+                          <div className="p-2.5 sm:p-3 bg-[#ffffff] rounded-xl sm:rounded-2xl shadow-xl border border-white/20 inline-block">
                             <img
                               src={`data:image/jpeg;base64,${dadosPix.qr_code_base64}`}
                               alt="QR Code Pix"
@@ -556,7 +556,7 @@ export default function CheckoutTransparente({
           )}
 
           <p className="text-[10px] sm:text-[11px] text-texto-terciario text-center leading-relaxed">
-            Seus dados financeiros são criptografados com segurança de ponta a ponta pelo Mercado Pago. O Cinética Ingressos não tem acesso às informações do seu cartão.
+            Seus dados financeiros são criptografados com segurança de ponta a ponta pelo Mercado Pago. A Cinética não tem acesso às informações do seu cartão.
           </p>
         </div>
       </div>

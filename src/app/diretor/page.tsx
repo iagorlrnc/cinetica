@@ -37,6 +37,58 @@ import {
 import { construirUrl } from '@/lib/dominios';
 import type { Evento, LoteIngresso, PedidoLoja } from '@/tipos';
 
+interface Pendencia {
+  chave: string;
+  texto: string;
+  acao: string;
+  href: string;
+  tom: 'alerta' | 'info';
+}
+
+const plural = (n: number, s: string, p: string) => `${n} ${n === 1 ? s : p}`;
+
+/** Lista de pendências do painel calculada a partir dos dados do banco. */
+function calcularPendencias(d: {
+  eventos: (Evento & { lotes_ingresso?: LoteIngresso[] })[];
+  entregasPendentes: number;
+  produtos: { is_active: boolean; stock_quantity: number }[];
+  sorteios: { status: string; data_sorteio: string }[];
+}): Pendencia[] {
+  const agora = Date.now();
+  const lista: Pendencia[] = [];
+
+  const rascunhos = d.eventos.filter((e) => e.status === 'rascunho').length;
+  if (rascunhos > 0) {
+    lista.push({ chave: 'rascunhos', texto: `${plural(rascunhos, 'evento', 'eventos')} em rascunho (não aparece no site)`, acao: 'Publicar', href: '/eventos', tom: 'info' });
+  }
+
+  const semLote = d.eventos.filter(
+    (e) =>
+      e.status === 'publicado' &&
+      new Date(e.data_evento).getTime() > agora &&
+      !(e.lotes_ingresso || []).some((l) => l.quantidade_vendida < l.quantidade_total)
+  ).length;
+  if (semLote > 0) {
+    lista.push({ chave: 'sem-lote', texto: `${plural(semLote, 'evento publicado', 'eventos publicados')} sem ingresso à venda`, acao: 'Ver lotes', href: '/eventos', tom: 'alerta' });
+  }
+
+  if (d.entregasPendentes > 0) {
+    lista.push({ chave: 'entregas', texto: `${plural(d.entregasPendentes, 'pedido pago', 'pedidos pagos')} da loja aguardando entrega`, acao: 'Entregar', href: '/metricas-loja', tom: 'alerta' });
+  }
+
+  const esgotados = d.produtos.filter((p) => p.is_active && p.stock_quantity <= 0).length;
+  if (esgotados > 0) {
+    lista.push({ chave: 'esgotados', texto: `${plural(esgotados, 'produto ativo esgotado', 'produtos ativos esgotados')}`, acao: 'Repor estoque', href: '/produtos', tom: 'info' });
+  }
+
+  const sorteiosVencidos = d.sorteios.filter((s) => s.status === 'ativo' && new Date(s.data_sorteio).getTime() < agora).length;
+  if (sorteiosVencidos > 0) {
+    lista.push({ chave: 'sorteios', texto: `${plural(sorteiosVencidos, 'sorteio', 'sorteios')} com data de apuração vencida`, acao: 'Registrar ganhador', href: '/sorteios', tom: 'alerta' });
+  }
+
+  return lista;
+}
+
 export default function DashboardDiretor() {
   const { usuario, perfil, entrar, carregando: carregandoAuth } = usarAutenticacao();
   const urlSitePrincipal = construirUrl('cliente', '/');
@@ -64,6 +116,7 @@ export default function DashboardDiretor() {
   const [eventosRecentes, setEventosRecentes] = useState<(Evento & { lotes_ingresso?: LoteIngresso[] })[]>([]);
   const [pedidosRecentes, setPedidosRecentes] = useState<PedidoLoja[]>([]);
   const [carregandoDados, setCarregandoDados] = useState(true);
+  const [pendencias, setPendencias] = useState<Pendencia[]>([]);
 
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
@@ -75,10 +128,7 @@ export default function DashboardDiretor() {
 
   async function buscarDados() {
     try {
-      let idAtletica = perfil?.atletica_id;
-      if (!idAtletica) {
-        idAtletica = (await obterIdAtleticaCinetica(supabase)) || undefined;
-      }
+      const idAtletica = (await obterIdAtleticaCinetica(supabase)) || undefined;
 
       // 1. Buscar Eventos com lotes
       let queryEventos = supabase
@@ -113,16 +163,22 @@ export default function DashboardDiretor() {
       // 3. Buscar Produtos da Loja
       let queryProdutos = supabase
         .from('store_products')
-        .select('id, is_active');
+        .select('id, is_active, stock_quantity');
 
       if (idAtletica) {
         queryProdutos = queryProdutos.eq('atletica_id', idAtletica);
       }
 
-      const [resEventos, resPedidos, resProdutos] = await Promise.all([
+      let querySorteios = supabase.from('sorteios').select('id, status, data_sorteio');
+      if (idAtletica) {
+        querySorteios = querySorteios.eq('atletica_id', idAtletica);
+      }
+
+      const [resEventos, resPedidos, resProdutos, resSorteios] = await Promise.all([
         queryEventos,
         queryPedidos,
         queryProdutos,
+        querySorteios,
       ]);
 
       // Processar Eventos
@@ -161,8 +217,17 @@ export default function DashboardDiretor() {
       });
 
       // Processar Produtos
-      const produtos = (resProdutos.data || []) as { id: string; is_active: boolean }[];
+      const produtos = (resProdutos.data || []) as { id: string; is_active: boolean; stock_quantity: number }[];
       const produtosAtivos = produtos.filter((p) => p.is_active).length;
+
+      setPendencias(
+        calcularPendencias({
+          eventos,
+          entregasPendentes,
+          produtos,
+          sorteios: (resSorteios.data || []) as { id: string; status: string; data_sorteio: string }[],
+        })
+      );
 
       setStats({
         totalVendido,
@@ -196,7 +261,7 @@ export default function DashboardDiretor() {
     setErroLogin('');
     setProcessandoLogin(true);
 
-    const res = await entrar(email, senha);
+    const res = await entrar(email, senha, 'geral', turnstileToken);
 
     if (res.erro) {
       setErroLogin(res.erro.includes('Invalid login') ? 'Email ou senha incorretos' : res.erro);
@@ -417,6 +482,34 @@ export default function DashboardDiretor() {
             </div>
           </div>
         </Cartao>
+      </div>
+
+      {/* Pendências */}
+      <div>
+        <h2 className="text-sm font-bold uppercase tracking-wider text-texto-terciario mb-3">O que precisa da sua atenção</h2>
+        {pendencias.length === 0 ? (
+          <p className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-sm font-semibold text-emerald-800">
+            Tudo em dia: nenhuma pendência no momento.
+          </p>
+        ) : (
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {pendencias.map((p) => (
+              <li key={p.chave}>
+                <Link
+                  href={resolverLink(p.href)}
+                  className={`flex items-center justify-between gap-3 p-4 rounded-2xl border text-sm font-semibold transition-colors ${
+                    p.tom === 'alerta'
+                      ? 'bg-amber-50 border-amber-200 text-amber-900 hover:bg-amber-100'
+                      : 'bg-white border-slate-200 text-slate-800 hover:border-[#c59941]'
+                  }`}
+                >
+                  <span>{p.texto}</span>
+                  <span className="text-xs font-bold text-[#9a7228] whitespace-nowrap">{p.acao} →</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {/* Ações Rápidas do Painel */}

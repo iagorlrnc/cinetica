@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { criarClienteAdmin } from '@/lib/supabase/admin';
-import { obterSessaoApi, ehGestorAtivo, podeGerenciarAtletica } from '@/lib/autenticacaoApi';
+import { obterSessaoApi, ehGestorAtivo } from '@/lib/autenticacaoApi';
 import { logger } from '@/lib/logger';
 import { ehUuid, MENSAGEM_ERRO_INTERNO } from '@/lib/seguranca';
 
@@ -32,11 +32,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ erro: 'Ingresso não encontrado.' }, { status: 404 });
     }
 
-    const evento = Array.isArray(ingresso.evento) ? ingresso.evento[0] : ingresso.evento;
-    if (!podeGerenciarAtletica(sessao.perfil, (evento as { atletica_id?: string } | null)?.atletica_id)) {
-      logger.security('Tentativa não autorizada de cancelar ingresso de outra atlética', { userId: sessao.user.id, ingressoId });
-      return NextResponse.json({ erro: 'Você não tem permissão para cancelar ingressos deste evento.' }, { status: 403 });
-    }
 
     if (ingresso.status === 'cancelado') {
       return NextResponse.json({ sucesso: true, mensagem: 'Ingresso já estava cancelado.' });

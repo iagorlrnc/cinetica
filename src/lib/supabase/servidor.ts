@@ -7,7 +7,7 @@ export async function criarClienteServidor() {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
   return createServerClient(
-    url || 'https://meuingrss.supabase.co',
+    url || 'https://placeholder.supabase.co',
     anonKey,
     {
       cookies: {

@@ -1,5 +1,6 @@
 'use client';
 
+import { usarRotaPainel } from '@/lib/rotasPainel';
 import { useState, useEffect } from 'react';
 import Cartao from '@/componentes/ui/Cartao';
 import Distintivo from '@/componentes/ui/Distintivo';
@@ -28,6 +29,7 @@ import { construirUrl } from '@/lib/dominios';
 import type { Evento } from '@/tipos';
 
 export default function DashboardAdmin() {
+  const rota = usarRotaPainel();
   const { usuario, perfil, entrar, carregando: carregandoAuth } = usarAutenticacao();
   const urlSitePrincipal = construirUrl('cliente', '/');
   const [stats, setStats] = useState({
@@ -94,7 +96,7 @@ export default function DashboardAdmin() {
     setErroLogin('');
     setProcessandoLogin(true);
 
-    const res = await entrar(email, senha, 'admin');
+    const res = await entrar(email, senha, 'admin', turnstileToken);
 
     if (res.erro) {
       setErroLogin(res.erro.includes('Invalid login') ? 'Credenciais administrativas incorretas' : res.erro);
@@ -160,7 +162,7 @@ export default function DashboardAdmin() {
               <CampoTexto
                 rotulo="Email administrativo"
                 type="email"
-                placeholder="admin@meuingrss.com.br"
+                placeholder="admin@email.com"
                 value={email}
                 onChange={(e) => setEmail((e.target as HTMLInputElement).value)}
                 icone={<Mail size={18} />}
@@ -257,19 +259,19 @@ export default function DashboardAdmin() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <Link href="/eventos"><Cartao variante="padrao" interativo className="text-center py-6 bg-white border border-slate-200 shadow-sm hover:border-[#c59941]"><CalendarDays className="w-8 h-8 text-[#9a7228] mx-auto mb-2" /><p className="font-bold text-sm text-slate-900">Gerenciar Eventos</p></Cartao></Link>
-        <Link href="/usuarios"><Cartao variante="padrao" interativo className="text-center py-6 bg-white border border-slate-200 shadow-sm hover:border-[#c59941]"><Users className="w-8 h-8 text-slate-700 mx-auto mb-2" /><p className="font-bold text-sm text-slate-900">Gerenciar Usuários</p></Cartao></Link>
-        <Link href="/atleticas"><Cartao variante="padrao" interativo className="text-center py-6 bg-white border border-slate-200 shadow-sm hover:border-[#c59941]"><Shield className="w-8 h-8 text-[#9a7228] mx-auto mb-2" /><p className="font-bold text-sm text-slate-900">Gerenciar Atléticas</p></Cartao></Link>
+        <Link href={rota('/eventos')}><Cartao variante="padrao" interativo className="text-center py-6 bg-white border border-slate-200 shadow-sm hover:border-[#c59941]"><CalendarDays className="w-8 h-8 text-[#9a7228] mx-auto mb-2" /><p className="font-bold text-sm text-slate-900">Gerenciar Eventos</p></Cartao></Link>
+        <Link href={rota('/usuarios')}><Cartao variante="padrao" interativo className="text-center py-6 bg-white border border-slate-200 shadow-sm hover:border-[#c59941]"><Users className="w-8 h-8 text-slate-700 mx-auto mb-2" /><p className="font-bold text-sm text-slate-900">Gerenciar Usuários</p></Cartao></Link>
+        <Link href={rota('/atleticas')}><Cartao variante="padrao" interativo className="text-center py-6 bg-white border border-slate-200 shadow-sm hover:border-[#c59941]"><Shield className="w-8 h-8 text-[#9a7228] mx-auto mb-2" /><p className="font-bold text-sm text-slate-900">Gerenciar Atléticas</p></Cartao></Link>
       </div>
 
       <Cartao variante="padrao" className="bg-white border border-slate-200 shadow-sm">
         <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
           <h3 className="text-lg font-bold font-titulo text-slate-900 flex items-center gap-2"><Activity size={20} className="text-[#c59941]" /> Atividade Recente</h3>
-          <Link href="/eventos"><Botao variante="fantasma" tamanho="sm" className="text-xs text-slate-600 hover:text-slate-900">Ver todos</Botao></Link>
+          <Link href={rota('/eventos')}><Botao variante="fantasma" tamanho="sm" className="text-xs text-slate-600 hover:text-slate-900">Ver todos</Botao></Link>
         </div>
         <div className="space-y-3">
           {eventosRecentes.map(evento => (
-            <Link key={evento.id} href={`/eventos/${evento.slug || evento.id}`} target="_blank" className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-all">
+            <Link key={evento.id} href={construirUrl('cliente', `/eventos/${evento.slug || evento.id}`)} target="_blank" className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-all">
               <div className="w-10 h-10 rounded-lg bg-[#c59941]/10 flex items-center justify-center flex-shrink-0">
                 <CalendarDays size={18} className="text-[#9a7228]" />
               </div>

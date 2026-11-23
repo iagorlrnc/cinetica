@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
         installments: parcelas,
         payment_method_id: metodo,
         ...(issuer ? { issuer_id: Number(issuer) } : {}),
-        statement_descriptor: 'MEUINGRSS',
+        statement_descriptor: 'CINETICA',
         payer: montarPayer(perfil, user.email, payerCliente),
         external_reference: pedido.pedidoId,
         notification_url: obterUrlWebhook(),

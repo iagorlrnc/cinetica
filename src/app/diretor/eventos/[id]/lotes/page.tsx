@@ -1,5 +1,6 @@
 'use client';
 
+import { usarRotaPainel } from '@/lib/rotasPainel';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -27,8 +28,10 @@ import {
   X
 } from 'lucide-react';
 import type { Evento, LoteIngresso } from '@/tipos';
+import { traduzirErroBanco } from '@/lib/errosBanco';
 
 export default function PaginaGerenciarLotes() {
+  const rota = usarRotaPainel();
   const params = useParams();
   const { sucesso, erro: notificarErro } = useNotificacao();
   const supabase = criarClienteNavegador();
@@ -183,7 +186,7 @@ export default function PaginaGerenciarLotes() {
       fecharModal();
       await buscarDados();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : (typeof err === 'object' && err && 'message' in err ? String((err as { message: string }).message) : 'Ocorreu um problema ao salvar o lote. Tente novamente.');
+      const msg = traduzirErroBanco(err, 'salvar o lote');
       console.error('Erro ao salvar lote:', err);
       notificarErro('Erro ao salvar lote', msg);
     } finally {
@@ -231,7 +234,7 @@ export default function PaginaGerenciarLotes() {
       );
       await buscarDados();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Não foi possível alterar o status do lote.';
+      const msg = traduzirErroBanco(err, 'alterar o status do lote');
       console.error(err);
       notificarErro('Erro', msg);
     }
@@ -270,7 +273,7 @@ export default function PaginaGerenciarLotes() {
       sucesso('Lote excluído', `O lote "${lote.nome_lote}" foi removido.`);
       await buscarDados();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Não foi possível remover este lote.';
+      const msg = traduzirErroBanco(err, 'remover o lote');
       console.error(err);
       notificarErro('Erro ao excluir', msg);
     }
@@ -288,7 +291,7 @@ export default function PaginaGerenciarLotes() {
     return (
       <div className="text-center py-12">
         <p className="text-texto-secundario mb-4">Evento não encontrado.</p>
-        <Link href="/eventos">
+        <Link href={rota('/eventos')}>
           <Botao variante="contorno">Voltar para Meus Eventos</Botao>
         </Link>
       </div>
@@ -303,7 +306,7 @@ export default function PaginaGerenciarLotes() {
     <div className="max-w-5xl mx-auto pb-12">
       {/* Botão de voltar */}
       <Link
-        href="/eventos"
+        href={rota('/eventos')}
         className="inline-flex items-center gap-2 text-sm text-texto-secundario hover:text-texto-principal transition-colors mb-6"
       >
         <ArrowLeft size={16} /> Voltar para Meus Eventos

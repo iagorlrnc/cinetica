@@ -7,6 +7,7 @@ import { ehIdPagamentoGateway, ehUuid, obterIpRequisicao } from '@/lib/seguranca
 import { STATUS_GATEWAY_CANCELADOS, type PagamentoGateway } from '@/lib/pagamentos/comum';
 import { liberarIngressosDoPagamento, type PedidoIngresso } from '@/lib/pagamentos/ingressos';
 import { confirmarPedidoLoja, type PedidoLojaBanco } from '@/lib/pagamentos/loja';
+import { confirmarPedidoSorteio, ERROS_CONFIRMACAO_DEFINITIVOS, type PedidoSorteio } from '@/lib/pagamentos/sorteios';
 
 type ClienteAdmin = ReturnType<typeof criarClienteAdmin>;
 
@@ -125,6 +126,8 @@ export async function POST(request: NextRequest) {
         p_gateway_payment_id: gatewayPaymentId,
         p_novo_status: status,
       });
+      // Cotas de sorteio: remove os bilhetes do pedido estornado (ou cancela o Pix pendente)
+      await supabase.rpc('estornar_pagamento_sorteio', { p_gateway_payment_id: gatewayPaymentId, p_novo_status: status });
       await registrarLog(supabase, {
         tipo_evento: 'payment', acao, data_id: gatewayPaymentId, status_resposta: 200,
         resultado: `Status ${status} processado`, ip, inicio, payload: { ...resumo, resultado: resEstorno },
@@ -168,7 +171,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ sucesso: resultado.sucesso, tipo: 'loja' }, { status: reprocessavel ? 500 : 200 });
     }
 
-    // 2. Pedido de ingressos
+    // 2. Cotas de sorteio?
+    const { data: pedidoSorteio } = await supabase
+      .from('sorteio_pedidos')
+      .select('id, valor_total, status')
+      .eq('id', referencia)
+      .maybeSingle();
+
+    if (pedidoSorteio) {
+      const resultado = await confirmarPedidoSorteio(supabase, pedidoSorteio as Pick<PedidoSorteio, 'id' | 'valor_total' | 'status'>, pagamento);
+      const reprocessavel = !resultado.sucesso && !ERROS_CONFIRMACAO_DEFINITIVOS.includes(resultado.erro);
+      await registrarLog(supabase, {
+        tipo_evento: 'payment', data_id: gatewayPaymentId, status_resposta: reprocessavel ? 500 : 200,
+        resultado: resultado.sucesso ? 'Bilhetes de sorteio emitidos' : undefined,
+        erro: resultado.sucesso ? undefined : resultado.erro, ip, inicio, payload: { pedido_id: referencia, tipo: 'sorteio' },
+      });
+      return NextResponse.json({ sucesso: resultado.sucesso, tipo: 'sorteio' }, { status: reprocessavel ? 500 : 200 });
+    }
+
+    // 3. Pedido de ingressos
     const { data: pedido } = await supabase
       .from('pedidos')
       .select('id, comprador_id, evento_id, lote_id, quantidade, valor_total, status')

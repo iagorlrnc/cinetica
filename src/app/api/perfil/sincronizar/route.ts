@@ -4,9 +4,10 @@ import { criarClienteServidor } from '@/lib/supabase/servidor';
 import { validarCPF } from '@/lib/utilitarios';
 import { limitarRequisicao } from '@/lib/rateLimit';
 import { logger } from '@/lib/logger';
+import { ehUrlAvatarDoUsuario } from '@/lib/perfil';
 
 /**
- * Atualiza apenas nome, CPF e telefone do PRÓPRIO usuário.
+ * Atualiza apenas nome, CPF, telefone e foto do PRÓPRIO usuário.
  * role / status / atletica_id nunca são aceitos aqui.
  */
 export async function POST(request: NextRequest) {
@@ -49,13 +50,25 @@ export async function POST(request: NextRequest) {
       payload.telefone = tel;
     }
 
-    if (Object.keys(payload).length === 0) {
+    // Foto de perfil: só arquivos da pasta do próprio usuário no bucket "avatares"; null remove
+    let avatar: string | null | undefined;
+    if (body.avatar_url === null) {
+      avatar = null;
+    } else if (typeof body.avatar_url === 'string' && body.avatar_url.trim()) {
+      const url = body.avatar_url.trim();
+      if (!ehUrlAvatarDoUsuario(url, user.id, process.env.NEXT_PUBLIC_SUPABASE_URL)) {
+        return NextResponse.json({ erro: 'Foto de perfil inválida.' }, { status: 400 });
+      }
+      avatar = url;
+    }
+
+    if (Object.keys(payload).length === 0 && avatar === undefined) {
       return NextResponse.json({ ok: true, mensagem: 'Nenhum dado para atualizar' });
     }
 
     const { error } = await criarClienteAdmin()
       .from('profiles')
-      .update({ ...payload, atualizado_em: new Date().toISOString() })
+      .update({ ...payload, ...(avatar !== undefined ? { avatar_url: avatar } : {}), atualizado_em: new Date().toISOString() })
       .eq('id', user.id);
 
     if (error) {

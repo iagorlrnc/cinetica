@@ -1,4 +1,4 @@
-# Relatório de Auditoria de Segurança e Melhorias — Cinética / meuingrss
+# Relatório de Auditoria de Segurança e Melhorias — Cinética
 
 **Data:** 17/11/2026 · **Escopo:** todo o repositório (`src/`, `supabase/`, configuração Next.js) · **Stack:** Next.js 16, React 19, Supabase (Postgres + RLS + Storage), Mercado Pago
 

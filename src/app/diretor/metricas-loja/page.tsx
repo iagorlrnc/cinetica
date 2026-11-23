@@ -57,10 +57,7 @@ export default function PaginaMetricasLoja() {
     async function carregarMetricas() {
       setCarregando(true);
       try {
-        let idAtletica = perfil?.atletica_id;
-        if (!idAtletica) {
-          idAtletica = (await obterIdAtleticaCinetica(supabase)) || undefined;
-        }
+        const idAtletica = (await obterIdAtleticaCinetica(supabase)) || undefined;
 
         let query = supabase
           .from('store_orders')

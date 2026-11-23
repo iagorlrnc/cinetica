@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { obterSubdominio } from '@/lib/dominios';
 
+const ARQUIVOS_RAIZ_PUBLICOS = new Set(['/robots.txt', '/sitemap.xml', '/llms.txt']);
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get('host') || '';
@@ -38,18 +40,6 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  const dominioDiretoria = (
-    process.env.NEXT_PUBLIC_SUBDOMINIO_DIRETORIA ||
-    process.env.NEXT_PUBLIC_SUBDOMINIO_DIRETOR ||
-    'diretoria.meuingrss.com.br'
-  ).replace(/\/+$/, '');
-
-  const dominioDev = (
-    process.env.NEXT_PUBLIC_SUBDOMINIO_DEV ||
-    process.env.NEXT_PUBLIC_SUBDOMINIO_ADMIN ||
-    'dev.meuingrss.com.br'
-  ).replace(/\/+$/, '');
-
   // Helper para preservar cookies em redirecionamentos e reescritas
   function redirecionarComCookies(url: string | URL): NextResponse {
     const resRedir = NextResponse.redirect(url);
@@ -71,6 +61,18 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
+  // Arquivos de SEO gerados na raiz do app (robots.ts, sitemap.ts, llms.txt/route.ts)
+  // não existem sob /cliente — reescrevê-los gera 404 para buscadores.
+  if (ARQUIVOS_RAIZ_PUBLICOS.has(pathname)) {
+    return response;
+  }
+
+  // Telas de login/cadastro dos painéis são públicas (senão ninguém consegue entrar)
+  const ehAuthPainel = /^\/(diretor|admin)\/autenticacao(\/|$)/.test(pathname);
+  if (ehAuthPainel) {
+    return response;
+  }
+
   // 1. Acesso direto ao painel da Atlética Cinética (/diretor ou /diretoria)
   if (pathname.startsWith('/diretor') || pathname.startsWith('/diretoria')) {
     const { data: authData } = await supabase.auth.getUser();
@@ -78,7 +80,8 @@ export async function proxy(request: NextRequest) {
 
     if (!userDiretor) {
       const urlLogin = request.nextUrl.clone();
-      urlLogin.pathname = '/autenticacao/entrar';
+      urlLogin.pathname = '/diretor/autenticacao/entrar';
+      urlLogin.search = '';
       urlLogin.searchParams.set('redirecionar', pathname);
       return redirecionarComCookies(urlLogin);
     }
@@ -106,7 +109,8 @@ export async function proxy(request: NextRequest) {
 
     if (!userAdmin) {
       const urlLogin = request.nextUrl.clone();
-      urlLogin.pathname = '/autenticacao/entrar';
+      urlLogin.pathname = '/admin/autenticacao/entrar';
+      urlLogin.search = '';
       urlLogin.searchParams.set('redirecionar', pathname);
       return redirecionarComCookies(urlLogin);
     }
@@ -132,7 +136,7 @@ export async function proxy(request: NextRequest) {
     url404.pathname = '/_not-found';
     return reescreverComCookies(url404);
   }
-  const rotasClienteProtegidas = ['/meus-ingressos', '/checkout'];
+  const rotasClienteProtegidas = ['/minha-conta', '/meus-ingressos', '/meus-bilhetes', '/checkout'];
   const precisaAuthCliente = rotasClienteProtegidas.some((rota) => pathname.startsWith(rota)) || pathname.includes('/checkout');
 
   let user = null;

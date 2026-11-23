@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { criarClienteAdmin } from '@/lib/supabase/admin';
-import { obterSessaoApi, ehGestorAtivo, podeGerenciarAtletica } from '@/lib/autenticacaoApi';
+import { obterSessaoApi, ehGestorAtivo } from '@/lib/autenticacaoApi';
 import { logger } from '@/lib/logger';
 import { ehUuid, MENSAGEM_ERRO_INTERNO } from '@/lib/seguranca';
 
@@ -30,10 +30,6 @@ export async function POST(request: NextRequest) {
 
     if (!order) {
       return NextResponse.json({ erro: 'Pedido não encontrado.' }, { status: 404 });
-    }
-    if (!podeGerenciarAtletica(sessao.perfil, order.atletica_id)) {
-      logger.security('Tentativa não autorizada de alterar entrega de pedido de outra atlética', { userId: sessao.user.id, orderId });
-      return NextResponse.json({ erro: 'Você não tem permissão para gerenciar pedidos desta atlética.' }, { status: 403 });
     }
     if (order.status !== 'paid') {
       return NextResponse.json({ erro: 'Apenas pedidos pagos podem ser marcados como entregues.' }, { status: 400 });

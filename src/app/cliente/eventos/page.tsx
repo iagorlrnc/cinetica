@@ -1,16 +1,16 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import Botao from '@/componentes/ui/Botao';
 import EstadoVazio from '@/componentes/ui/EstadoVazio';
-import { SkeletonCard } from '@/componentes/ui/Carregando';
 import { criarClienteNavegador } from '@/lib/supabase/cliente';
-import { formatarData, formatarMoeda, ordenarEventosPorPrioridade, matchFiltroCidade } from '@/lib/utilitarios';
+import { ordenarEventosPorPrioridade, matchFiltroCidade } from '@/lib/utilitarios';
+import { eventoJaPassou } from '@/lib/eventos';
+import CardEvento from '@/componentes/eventos/CardEvento';
+import TituloSecao from '@/componentes/ui/TituloSecao';
 import type { Evento, LoteIngresso, Atletica } from '@/tipos';
-import BarraNavegacaoMobile from '@/componentes/layout/BarraNavegacaoMobile';
-import { Calendar, MapPin, Users, Ticket, SlidersHorizontal, Search, X, RotateCcw } from 'lucide-react';
+import { MapPin, SlidersHorizontal, Search, X, RotateCcw } from 'lucide-react';
 
 import { salvarVariosEventosCache } from '@/lib/cacheEventos';
 
@@ -38,7 +38,7 @@ function ConteudoEventos() {
   const [busca, setBusca] = useState(buscaInicial);
   const [cidade, setCidade] = useState(cidadeInicial);
   const [periodo, setPeriodo] = useState<Periodo>('proximos');
-  const supabase = criarClienteNavegador();
+  const [supabase] = useState(() => criarClienteNavegador());
 
   useEffect(() => {
     const q = searchParams.get('busca') || searchParams.get('atletica') || '';
@@ -80,8 +80,7 @@ function ConteudoEventos() {
   useEffect(() => { buscarEventos(0); }, []);
 
   const [agora] = useState(() => Date.now());
-  const ehPassado = (e: EventoComRelacoes) =>
-    e.status === 'encerrado' || e.status === 'cancelado' || new Date(e.data_evento).getTime() < agora - 6 * 3600 * 1000;
+  const ehPassado = (e: EventoComRelacoes) => eventoJaPassou(e, agora);
 
   const cidadesDisponiveis = Array.from(
     new Set(eventos.map((e) => (e.cidade || '').trim()).filter(Boolean))
@@ -99,286 +98,143 @@ function ConteudoEventos() {
     return matchBusca && matchCidade && matchPeriodo;
   });
 
-  function extrairDataTicketmaster(dataIso: string) {
-    const d = new Date(dataIso);
-    const mes = d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase();
-    const dia = d.getDate().toString().padStart(2, '0');
-    return { mes, dia };
-  }
-
-  function menorPreco(lotes?: LoteIngresso[]): number | null {
-    if (!lotes || lotes.length === 0) return null;
-    const ativos = lotes.filter(l => l.ativo && l.quantidade_vendida < l.quantidade_total);
-    return ativos.length ? Math.min(...ativos.map(l => l.preco)) : null;
-  }
-
   return (
-    <>
-      <BarraNavegacaoMobile />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-12">
-        <h1 className="text-2xl sm:text-3xl font-black font-titulo mb-2 text-slate-900">
-          Todos os <span className="gradiente-texto">Eventos</span>
-        </h1>
-        <p className="text-slate-600 mb-6">Encontre o evento perfeito para você</p>
+    <div className="relative">
+      <section className="relative overflow-hidden fundo-granulado border-b border-borda-sutil">
+        <div className="absolute inset-0 fundo-grade [mask-image:linear-gradient(to_bottom,black,transparent)]" aria-hidden="true" />
+        <div className="brilho-ouro w-[420px] h-[420px] -top-48 right-0 opacity-60" aria-hidden="true" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-8">
+          <TituloSecao
+            nivel="h1"
+            rotulo="Agenda Cinética"
+            titulo={<>Todos os <span className="texto-ouro">rolês</span></>}
+            descricao="Calouradas, festas, jogos e tudo que a fisio aprontar. Escolhe o seu."
+            className="!mb-8"
+          />
 
-        <div className="space-y-3 mb-8">
-          <div className="relative">
-            <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="search"
-              aria-label="Buscar eventos"
-              placeholder="Buscar por evento, local, cidade ou atlética..."
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              maxLength={80}
-              className="w-full bg-white border border-slate-200 rounded-2xl pl-10 pr-10 py-3 text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#c59941] transition-all shadow-sm"
-            />
-            {busca && (
-              <button
-                type="button"
-                onClick={() => setBusca('')}
-                aria-label="Limpar busca"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1 rounded-full hover:bg-slate-100"
-              >
-                <X size={16} />
-              </button>
-            )}
-          </div>
+          <div className="flex flex-col lg:flex-row gap-3">
+            <label className="campo-pop flex items-center gap-3 px-5 h-14 flex-1">
+              <Search size={20} className="text-ouro shrink-0" />
+              <span className="sr-only">Buscar eventos</span>
+              <input
+                type="search"
+                placeholder="Busca por nome, local ou cidade..."
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                maxLength={80}
+                className="w-full bg-transparent text-base text-texto-principal placeholder:text-texto-terciario outline-none"
+              />
+              {busca && (
+                <button
+                  type="button"
+                  onClick={() => setBusca('')}
+                  aria-label="Limpar busca"
+                  className="text-texto-terciario hover:text-texto-principal p-1 rounded-full cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              )}
+            </label>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {([
-              ['proximos', 'Próximos'],
-              ['todos', 'Todos'],
-              ['passados', 'Encerrados'],
-            ] as [Periodo, string][]).map(([id, rotulo]) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setPeriodo(id)}
-                aria-pressed={periodo === id}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border transition-all ${
-                  periodo === id
-                    ? 'bg-[#c59941] border-[#c59941] text-slate-950'
-                    : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
-                }`}
-              >
-                {rotulo}
-              </button>
-            ))}
+            <div className="flex items-center gap-2 overflow-x-auto sem-barra-rolagem -mx-4 px-4 lg:mx-0 lg:px-0">
+              {([
+                ['proximos', 'Próximos'],
+                ['todos', 'Todos'],
+                ['passados', 'Já rolaram'],
+              ] as [Periodo, string][]).map(([id, rotulo]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setPeriodo(id)}
+                  aria-pressed={periodo === id}
+                  data-ativo={periodo === id}
+                  className="chip h-14 px-5"
+                >
+                  {rotulo}
+                </button>
+              ))}
 
-            {cidadesDisponiveis.length > 1 && (
-              <select
-                aria-label="Filtrar por cidade"
-                value={cidade}
-                onChange={(e) => setCidade(e.target.value)}
-                className="ml-auto bg-white border border-slate-200 rounded-full px-3.5 py-1.5 text-xs font-bold text-slate-700 outline-none focus:border-[#c59941]"
-              >
-                <option value="">Todas as cidades</option>
-                {cidadesDisponiveis.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            )}
+              {cidadesDisponiveis.length > 1 && (
+                <label className="chip h-14 px-4 gap-2">
+                  <MapPin size={16} className="text-ouro" />
+                  <span className="sr-only">Filtrar por cidade</span>
+                  <select
+                    value={cidade}
+                    onChange={(e) => setCidade(e.target.value)}
+                    className="bg-transparent text-sm font-bold text-texto-principal outline-none cursor-pointer"
+                  >
+                    <option value="">Todas as cidades</option>
+                    {cidadesDisponiveis.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
+            </div>
           </div>
         </div>
+      </section>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 pb-20">
+        {!carregando && !erroCarga && (
+          <p className="text-sm font-semibold text-texto-terciario mb-6">
+            {eventosFiltrados.length} {eventosFiltrados.length === 1 ? 'evento encontrado' : 'eventos encontrados'}
+          </p>
+        )}
 
         {erroCarga && eventos.length === 0 ? (
           <EstadoVazio
             titulo="Não foi possível carregar os eventos"
             descricao="Verifique sua conexão e tente novamente."
             icone={<RotateCcw className="w-7 h-7" />}
-            acao={<Botao variante="contorno" onClick={() => buscarEventos(0)}>Tentar novamente</Botao>}
+            acao={<Botao variante="primario" onClick={() => buscarEventos(0)}>Tentar novamente</Botao>}
           />
         ) : carregando ? (
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
-            {Array.from({ length: 9 }).map((_, i) => <SkeletonCard key={i} className="h-[280px] sm:h-[360px]" />)}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {Array.from({ length: 6 }).map((_, i) => <div key={i} className="skeleton aspect-[4/5] rounded-[1.75rem]" />)}
           </div>
         ) : eventosFiltrados.length > 0 ? (
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
-          {eventosFiltrados.map((evento) => {
-            const dataFormatada = extrairDataTicketmaster(evento.data_evento);
-            const preco = menorPreco(evento.lotes_ingresso);
-            const totalRestante = evento.lotes_ingresso
-              ?.filter(l => l.ativo && l.quantidade_vendida < l.quantidade_total)
-              .reduce((a, l) => a + (l.quantidade_total - l.quantidade_vendida), 0) || 0;
-            const esgotado = !evento.lotes_ingresso || evento.lotes_ingresso.length === 0 || totalRestante === 0 || preco === null;
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {eventosFiltrados.map((evento) => (
+              <CardEvento key={evento.id} evento={evento} agora={agora} />
+            ))}
+          </div>
+        ) : (
+          <EstadoVazio
+            titulo={periodo === 'proximos' && !busca && !cidade ? 'Nenhum evento programado' : 'Nada por aqui'}
+            descricao={
+              busca
+                ? `Não achamos eventos com "${busca}". Tenta outro termo.`
+                : periodo === 'proximos'
+                  ? 'Não tem evento com venda aberta agora. Volta logo que a diretoria tá preparando novidade!'
+                  : 'Nenhum evento para esses filtros.'
+            }
+            icone={<SlidersHorizontal className="w-7 h-7" />}
+            acao={
+              busca || cidade || periodo !== 'todos' ? (
+                <Botao variante="contorno" onClick={() => { setBusca(''); setCidade(''); setPeriodo('todos'); }}>
+                  Ver todos os eventos
+                </Botao>
+              ) : undefined
+            }
+          />
+        )}
 
-            return (
-              <Link
-                key={evento.id}
-                href={`/eventos/${evento.slug || evento.id}`}
-                className="group flex flex-col bg-white border border-slate-200/80 rounded-2xl overflow-hidden hover:border-[#c59941] hover:shadow-xl transition-all duration-300 shadow-sm"
-              >
-                {/* Event Card Image & Badges Container */}
-                <div className="relative h-36 sm:h-48 w-full bg-slate-100 overflow-hidden">
-                  {evento.imagem_url ? (
-                    <img
-                      src={evento.imagem_url}
-                      alt={evento.titulo}
-                      loading="lazy"
-                      decoding="async"
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#0e1422] via-[#1a2333] to-[#c59941]">
-                      <Ticket className="w-8 h-8 sm:w-12 sm:h-12 text-[#f4d68a]/60" />
-                    </div>
-                  )}
-
-                  {/* Festive Date Box */}
-                  <div className="absolute top-2 left-2 sm:top-3 sm:left-3 w-9 h-11 sm:w-12 sm:h-14 bg-gradient-to-b from-[#c59941] to-[#9a7228] text-white rounded-lg shadow-lg flex flex-col items-center justify-center border border-white/30">
-                    <span className="text-[8px] sm:text-[10px] font-black tracking-widest uppercase opacity-90 leading-none">
-                      {dataFormatada.mes}
-                    </span>
-                    <span className="text-xs sm:text-lg font-black leading-none mt-0.5">
-                      {dataFormatada.dia}
-                    </span>
-                  </div>
-
-                  {/* Presale / Status Badge */}
-                  <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
-                    {(() => {
-                      const ehCancelado = evento.status === 'cancelado';
-                      const ehEncerrado = evento.status === 'encerrado' || new Date(evento.data_evento) < new Date();
-
-                      if (ehCancelado) {
-                        return (
-                          <span className="px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md bg-red-700 text-white text-[8px] sm:text-[10px] font-black uppercase tracking-wider shadow">
-                            Cancelado
-                          </span>
-                        );
-                      }
-                      if (ehEncerrado) {
-                        return (
-                          <span className="px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md bg-slate-600 text-slate-100 text-[8px] sm:text-[10px] font-black uppercase tracking-wider shadow">
-                            Encerrado
-                          </span>
-                        );
-                      }
-                      if (esgotado) {
-                        return (
-                          <span className="px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md bg-red-600 text-white text-[8px] sm:text-[10px] font-black uppercase tracking-wider shadow">
-                            Esgotado
-                          </span>
-                        );
-                      }
-                      if (totalRestante <= 20) {
-                        return (
-                          <span className="px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md bg-red-600 text-white text-[8px] sm:text-[10px] font-black uppercase tracking-wider shadow">
-                            Últimos
-                          </span>
-                        );
-                      }
-                      return (
-                        <span className="px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md bg-[#c59941] text-slate-950 text-[8px] sm:text-[10px] font-black uppercase tracking-wider shadow">
-                          Venda Geral
-                        </span>
-                      );
-                    })()}
-                  </div>
-
-                  {/* Atletica Badge overlay */}
-                  <div className="absolute bottom-1.5 left-2 sm:bottom-2 sm:left-3 max-w-[85%]">
-                    <span className="px-2 py-0.5 rounded-md bg-[#0e1422]/90 text-[#f4d68a] text-[8px] sm:text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-sm border border-[#c59941]/30 truncate block shadow-sm">
-                      {evento.atletica?.nome || 'Organizador'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Card Info Body */}
-                <div className="p-3 sm:p-5 flex-1 flex flex-col justify-between space-y-2 sm:space-y-4">
-                  <div>
-                    <h3 className="text-xs sm:text-lg font-black font-titulo text-slate-900 group-hover:text-[#c59941] transition-colors line-clamp-2 leading-snug">
-                      {evento.titulo}
-                    </h3>
-
-                    <div className="mt-1.5 space-y-0.5 text-[10px] sm:text-xs text-slate-500">
-                      <p className="flex items-center gap-1 truncate">
-                        <MapPin size={12} className="text-[#c59941] shrink-0" />
-                        <span className="truncate">{evento.local}{evento.cidade ? `, ${evento.cidade}` : ''}</span>
-                      </p>
-                      <p className="flex items-center gap-1 truncate">
-                        <Calendar size={12} className="text-[#c59941] shrink-0" />
-                        <span className="truncate">{formatarData(evento.data_evento)}</span>
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Footer Row: Price & Buy Button */}
-                  <div className="pt-2 sm:pt-3 border-t border-slate-100 flex items-center justify-between gap-1">
-                    {esgotado ? (
-                      <>
-                        <span className="font-black text-red-600 text-xs sm:text-base">
-                          Esgotado
-                        </span>
-                        <span className="text-[10px] sm:text-xs text-slate-400 flex items-center gap-1">
-                          <Users size={10} className="text-red-500" /> 0
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <div>
-                          <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                            A partir de
-                          </span>
-                          <p className="text-xs sm:text-base font-black text-slate-900">
-                            {preco !== null && preco > 0 ? formatarMoeda(preco) : preco === 0 ? 'Gratuito' : 'Esgotado'}
-                          </p>
-                        </div>
-
-                        <Botao variante="primario" tamanho="sm" className="px-2 sm:px-4 py-1 text-[10px] sm:text-xs min-h-[32px] sm:min-h-[36px]">
-                          Detalhes
-                        </Botao>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      ) : (
-        <EstadoVazio
-          titulo={periodo === 'proximos' && !busca && !cidade ? 'Nenhum evento programado' : 'Nenhum evento encontrado'}
-          descricao={
-            busca
-              ? `Não encontramos eventos que coincidam com "${busca}". Tente outros termos.`
-              : periodo === 'proximos'
-                ? 'Não há eventos com vendas abertas no momento. Volte em breve para conferir novidades!'
-                : 'Não há eventos para os filtros selecionados.'
-          }
-          icone={<SlidersHorizontal className="w-7 h-7" />}
-          acao={
-            busca || cidade || periodo !== 'todos' ? (
-              <Botao variante="contorno" onClick={() => { setBusca(''); setCidade(''); setPeriodo('todos'); }}>
-                Ver todos os eventos
-              </Botao>
-            ) : undefined
-          }
-        />
-      )}
-
-      {!carregando && temMais && (
-        <div className="flex justify-center mt-10">
-          <Botao variante="contorno" carregando={carregandoMais} onClick={() => buscarEventos(eventos.length)}>
-            Carregar mais eventos
-          </Botao>
-        </div>
-      )}
+        {!carregando && temMais && (
+          <div className="flex justify-center mt-12">
+            <Botao variante="contorno" tamanho="lg" carregando={carregandoMais} onClick={() => buscarEventos(eventos.length)}>
+              Carregar mais eventos
+            </Botao>
+          </div>
+        )}
       </div>
-    </>
+    </div>
   );
 }
 
 export default function PaginaEventos() {
   return (
-    <Suspense fallback={
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} className="h-[360px]" />)}
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<div className="max-w-7xl mx-auto px-4 sm:px-6 pt-16 pb-12"><div className="skeleton h-40 rounded-[1.75rem]" /></div>}>
       <ConteudoEventos />
     </Suspense>
   );

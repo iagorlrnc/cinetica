@@ -18,7 +18,6 @@ import { criarClienteNavegador } from '@/lib/supabase/cliente';
 import { usarAutenticacao } from '@/contextos/ContextoAutenticacao';
 import { formatarData, formatarMoeda, mascararCPF } from '@/lib/utilitarios';
 import type { Ingresso, Evento, LoteIngresso, Perfil, Atletica, StatusIngresso } from '@/tipos';
-import BarraNavegacaoMobile from '@/componentes/layout/BarraNavegacaoMobile';
 import { 
   Ticket, 
   Calendar, 
@@ -417,7 +416,6 @@ function ConteudoMeusIngressos() {
   if (carregando || carregandoAuth) {
     return (
       <>
-        <BarraNavegacaoMobile />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-6 pb-16">
           <div className="space-y-3 mb-6">
             <div className="h-8 w-48 bg-white/10 rounded-md animate-pulse" />
@@ -425,7 +423,7 @@ function ConteudoMeusIngressos() {
           </div>
           <div className="space-y-4">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-44 rounded-xl bg-[#0f172a] border border-white/10 animate-pulse" />
+              <div key={i} className="h-44 rounded-xl bg-azul-900 border border-white/10 animate-pulse" />
             ))}
           </div>
         </div>
@@ -435,7 +433,6 @@ function ConteudoMeusIngressos() {
 
   return (
     <>
-      <BarraNavegacaoMobile />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-6 pb-16">
 
         {/* === Banner de Status do Pedido === */}
@@ -594,7 +591,7 @@ function ConteudoMeusIngressos() {
         {/* Cabeçalho da Página */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-black font-titulo">
+            <h1 className="titulo-display text-4xl sm:text-6xl text-texto-principal">
               Meus <span className="gradiente-texto">Ingressos</span>
             </h1>
             <p className="text-texto-secundario text-xs sm:text-sm mt-1">

@@ -18,13 +18,14 @@ interface ContextoCookiesTipo {
   aceitarApenasEssenciais: () => void;
 }
 
+/** LGPD: categorias não essenciais começam desligadas até o usuário autorizar. */
 const PREFERENCIAS_PADRAO: PreferenciasCookies = {
   essenciais: true,
-  analiticos: true,
+  analiticos: false,
   marketing: false,
 };
 
-const CHAVE_LOCAL_STORAGE = 'meuingrss_consentimento_cookies';
+const CHAVE_LOCAL_STORAGE = 'cinetica_consentimento_cookies';
 
 const ContextoCookies = createContext<ContextoCookiesTipo | undefined>(undefined);
 

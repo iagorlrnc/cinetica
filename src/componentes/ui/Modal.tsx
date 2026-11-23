@@ -74,7 +74,7 @@ export default function Modal({
         {/* Modal Dialog */}
         <div
           className={cn(
-            'relative w-full vidro-forte rounded-2xl shadow-glass animar-entrar-baixo max-h-[88vh] flex flex-col my-auto overflow-hidden border border-white/15',
+            'relative w-full vidro-forte rounded-3xl shadow-glass animar-entrar-baixo max-h-[88vh] flex flex-col my-auto overflow-hidden border border-borda-media',
             tamanhos[tamanho],
             className
           )}

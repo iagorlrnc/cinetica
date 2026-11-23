@@ -54,7 +54,7 @@ describe('Testes de SEO Técnico e GEO (Generative Engine Optimization)', () => 
   };
 
   it('deve gerar os schemas JSON-LD Schema.org válidos para o evento', () => {
-    const urlPagina = 'https://meuingrss.com.br/eventos/calourada-uft-2026';
+    const urlPagina = 'https://exemplo.com.br/eventos/calourada-uft-2026';
     const imagemUrl = 'https://exemplo.com/imagem.jpg';
 
     const { schemaEvento, schemaBreadcrumb, schemaFAQ } = gerarJsonLdEvento({

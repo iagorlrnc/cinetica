@@ -3,11 +3,17 @@
  * Funções puras — cobertas por testes em src/__tests__/pagamentos-comum.test.ts
  */
 
-export const EMAIL_PAYER_PADRAO = 'comprador.meuingrss@gmail.com';
+export const EMAIL_PAYER_PADRAO = 'comprador@example.com';
 
-export function obterUrlWebhook(): string {
-  const dominio = (process.env.NEXT_PUBLIC_DOMINIO_PRINCIPAL || 'meuingrss.com.br').replace(/\/+$/, '');
-  // O Mercado Pago só aceita notification_url HTTPS pública
+/**
+ * URL do webhook enviada ao Mercado Pago. Só existe com um domínio público configurado
+ * (o Mercado Pago não aceita localhost); sem ele, a confirmação fica por conta da
+ * consulta de status e do cron de reconciliação.
+ */
+export function obterUrlWebhook(): string | undefined {
+  const bruto = process.env.NEXT_PUBLIC_DOMINIO_PRINCIPAL || process.env.VERCEL_PROJECT_PRODUCTION_URL || '';
+  const dominio = bruto.trim().replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+  if (!dominio || /^(localhost|127\.|0\.0\.0\.0|\[::1\])/i.test(dominio)) return undefined;
   return `https://${dominio}/api/webhook-mercadopago`;
 }
 

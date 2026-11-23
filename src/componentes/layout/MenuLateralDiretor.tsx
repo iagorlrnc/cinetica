@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { construirUrl } from '@/lib/dominios';import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utilitarios';
 import { usarAutenticacao } from '@/contextos/ContextoAutenticacao';
@@ -109,7 +109,7 @@ export default function MenuLateralDiretor() {
 
             <div className="pt-4 border-t border-slate-200 space-y-2">
               <Link
-                href="/"
+                href={construirUrl('cliente', '/')}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all"
               >
                 <ExternalLink size={18} className="flex-shrink-0" />
@@ -190,7 +190,7 @@ export default function MenuLateralDiretor() {
 
         <div className="p-3 border-t border-slate-200 space-y-1">
           <Link
-            href="/"
+            href={construirUrl('cliente', '/')}
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all"
             title={recolhido ? 'Voltar ao Site' : undefined}
           >
@@ -224,7 +224,7 @@ export default function MenuLateralDiretor() {
                 </span>
               </div>
             ) : (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono font-medium text-slate-600 bg-slate-100 border border-slate-200" title={`MeuIngrss ${VERSAO_SISTEMA}`}>
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono font-medium text-slate-600 bg-slate-100 border border-slate-200" title={`Cinética ${VERSAO_SISTEMA}`}>
                 {VERSAO_SISTEMA}
               </span>
             )}

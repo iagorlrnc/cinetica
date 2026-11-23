@@ -1,10 +1,9 @@
 import type { MetadataRoute } from 'next';
 import { criarClienteAdmin } from '@/lib/supabase/admin';
+import { obterUrlSite } from '@/lib/dominios';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const dominioPrincipal = (process.env.NEXT_PUBLIC_DOMINIO_PRINCIPAL || 'meuingrss.com.br').replace(/\/+$/, '');
-  const protocolo = process.env.NEXT_PUBLIC_PROTOCOLO || 'https';
-  const baseUrl = `${protocolo}://${dominioPrincipal}`;
+  const baseUrl = obterUrlSite();
 
   // 1. Rotas estáticas da aplicação
   const rotasEstaticas: MetadataRoute.Sitemap = [
@@ -15,10 +14,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1.0,
     },
     {
+      url: `${baseUrl}/loja`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.95,
+    },
+    {
+      url: `${baseUrl}/sorteios`,
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.95,
+    },
+    {
       url: `${baseUrl}/eventos`,
       lastModified: new Date(),
       changeFrequency: 'daily',
-      priority: 0.9,
+      priority: 0.85,
     },
     {
       url: `${baseUrl}/atleticas`,

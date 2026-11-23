@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import CabecalhoCliente from '@/componentes/layout/CabecalhoCliente';
 import Rodape from '@/componentes/layout/Rodape';
+import BarraNavegacaoMobile from '@/componentes/layout/BarraNavegacaoMobile';
 
 export default function LayoutCliente({
   children,
@@ -13,19 +14,15 @@ export default function LayoutCliente({
   const ehPaginaAutenticacao = pathname?.includes('/autenticacao');
 
   if (ehPaginaAutenticacao) {
-    return <main className="min-h-screen bg-[#fafafa]">{children}</main>;
+    return <main className="tema-cinetica min-h-screen">{children}</main>;
   }
 
-  const ehInicio = pathname === '/' || pathname === '/cliente';
-
   return (
-    <>
+    <div className="tema-cinetica min-h-screen flex flex-col pb-[76px] lg:pb-0">
       <CabecalhoCliente />
-      <main className={`min-h-screen ${ehInicio ? 'pt-0' : 'pt-16 md:pt-[120px]'}`}>
-        {children}
-      </main>
+      <main className="flex-1 pt-[72px] sm:pt-20">{children}</main>
       <Rodape />
-    </>
+      <BarraNavegacaoMobile />
+    </div>
   );
 }
-

@@ -1,13 +1,12 @@
 import { Metadata } from 'next';
+import { obterUrlSite } from '@/lib/dominios';
 
-const dominioPrincipal = (process.env.NEXT_PUBLIC_DOMINIO_PRINCIPAL || 'meuingrss.com.br').replace(/\/+$/, '');
-const protocolo = process.env.NEXT_PUBLIC_PROTOCOLO || 'https';
-const baseUrl = `${protocolo}://${dominioPrincipal}`;
+const baseUrl = obterUrlSite();
 
 export const metadata: Metadata = {
-  title: 'Atléticas | Meuingrss',
+  title: 'Atléticas | Cinética',
   description:
-    'Conheça as atléticas acadêmicas parceiras do Meuingrss. Encontre eventos, calouradas e festas organizadas pelas atléticas.',
+    'Conheça as atléticas acadêmicas parceiras da Cinética. Encontre eventos, calouradas e festas organizadas pelas atléticas.',
   alternates: {
     canonical: `${baseUrl}/atleticas`,
   },
@@ -16,11 +15,11 @@ export const metadata: Metadata = {
     follow: true,
   },
   openGraph: {
-    title: 'Atléticas | Meuingrss',
+    title: 'Atléticas | Cinética',
     description:
-      'Painel oficial de atléticas universitárias parceiras da plataforma meuingrss.',
+      'Painel oficial de atléticas universitárias parceiras da plataforma Cinética.',
     url: `${baseUrl}/atleticas`,
-    siteName: 'Meuingrss',
+    siteName: 'Cinética',
     locale: 'pt_BR',
     type: 'website',
   },

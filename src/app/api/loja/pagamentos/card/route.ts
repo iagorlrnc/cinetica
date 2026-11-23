@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
         installments: parcelas,
         payment_method_id: metodo,
         ...(issuer ? { issuer_id: Number(issuer) } : {}),
-        statement_descriptor: 'MEUINGRSS LOJA',
+        statement_descriptor: 'CINETICA LOJA',
         payer: montarPayer(perfil, user.email, body.payer || formData.payer || null),
         external_reference: pedido.orderId,
         notification_url: obterUrlWebhook(),

@@ -74,11 +74,11 @@ function ConteudoMeusPedidos() {
   if (!usuario) {
     return (
       <div className="max-w-md mx-auto py-20 px-4 text-center space-y-4">
-        <div className="w-16 h-16 rounded-2xl bg-white/5 mx-auto flex items-center justify-center text-slate-400">
+        <div className="w-16 h-16 rounded-2xl bg-white/5 mx-auto flex items-center justify-center text-texto-terciario">
           <ShoppingCart size={28} />
         </div>
         <h2 className="text-xl font-bold text-white font-titulo">Acesso Restrito</h2>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-texto-terciario">
           Faça login para visualizar seus pedidos de produtos oficiais.
         </p>
         <Link href="/autenticacao/entrar?redirecionar=/loja/meus-pedidos">
@@ -142,11 +142,11 @@ function ConteudoMeusPedidos() {
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-8">
       {/* Banner de Confirmação quando redirecionado do checkout */}
       {statusDestaque === 'aprovado' && (
-        <div className="p-5 rounded-3xl bg-emerald-50 border border-emerald-200 flex items-start gap-4">
-          <CheckCircle2 size={28} className="text-emerald-600 shrink-0 mt-0.5" />
+        <div className="p-5 rounded-3xl bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-4">
+          <CheckCircle2 size={28} className="text-emerald-400 shrink-0 mt-0.5" />
           <div className="space-y-1">
-            <h3 className="text-base font-bold text-slate-900 font-titulo">Parabéns! Seu pedido foi confirmado com sucesso.</h3>
-            <p className="text-xs text-slate-600">
+            <h3 className="text-base font-bold text-texto-principal font-titulo">Parabéns! Seu pedido foi confirmado com sucesso.</h3>
+            <p className="text-xs text-texto-secundario">
               O pagamento foi processado e seu pedido já está registrado junto à diretoria da atlética.
             </p>
           </div>
@@ -154,13 +154,13 @@ function ConteudoMeusPedidos() {
       )}
 
       {/* Cabeçalho */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-borda-sutil">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black font-titulo text-slate-900 flex items-center gap-2.5">
-            <ShoppingCart className="text-[#c59941]" size={28} />
+          <h1 className="titulo-display text-4xl sm:text-6xl text-texto-principal flex items-center gap-3">
+            <ShoppingCart className="text-ouro" size={28} />
             Meus Pedidos da Loja
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          <p className="text-xs sm:text-sm text-texto-secundario mt-1">
             Acompanhe o histórico de compras de produtos oficiais das atléticas
           </p>
         </div>
@@ -182,15 +182,15 @@ function ConteudoMeusPedidos() {
             return (
               <div
                 key={pedido.id}
-                className={`p-5 sm:p-6 rounded-3xl bg-white border transition-all space-y-5 shadow-sm ${
-                  ehDestaque ? 'border-[#c59941] ring-2 ring-[#c59941]/20' : 'border-slate-200/80'
+                className={`p-5 sm:p-6 rounded-3xl bg-fundo-card border transition-all space-y-5 shadow-sm ${
+                  ehDestaque ? 'border-ouro ring-2 ring-ouro/20' : 'border-borda-sutil'
                 }`}
               >
                 {/* Header do Pedido */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-borda-sutil">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono font-bold text-slate-500">
+                      <span className="text-xs font-mono font-bold text-texto-secundario">
                         Pedido #{pedido.id.substring(0, 8).toUpperCase()}
                       </span>
                       {pedido.atletica && (
@@ -202,14 +202,14 @@ function ConteudoMeusPedidos() {
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[11px] text-texto-terciario">
                       Realizado em {formatarDataHora(pedido.created_at)}
                     </p>
                   </div>
 
                   <div className="flex items-center gap-3">
                     {renderStatusBadge(pedido.status, pedido.metadata)}
-                    <span className="text-lg font-black text-slate-900 font-titulo">
+                    <span className="text-lg font-black text-texto-principal font-titulo">
                       {formatarMoeda(totalReais)}
                     </span>
                   </div>
@@ -217,21 +217,21 @@ function ConteudoMeusPedidos() {
 
                 {/* Itens do Pedido */}
                 <div className="space-y-2.5">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Itens Comprados:</h4>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-texto-secundario">Itens Comprados:</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     {pedido.items?.map((item) => (
                       <div
                         key={item.id}
-                        className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs"
+                        className="p-3 rounded-xl bg-fundo-elevado/60 border border-borda-sutil flex items-center justify-between text-xs"
                       >
                         <div className="min-w-0 pr-2">
-                          <p className="font-bold text-slate-900 truncate">{item.product_name_snapshot}</p>
-                          <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
+                          <p className="font-bold text-texto-principal truncate">{item.product_name_snapshot}</p>
+                          <div className="flex items-center gap-2 text-[11px] text-texto-secundario mt-0.5">
                             <span>Quantidade: {item.quantity}x</span>
                             {item.size && <span>• Tam: {item.size}</span>}
                           </div>
                         </div>
-                        <span className="font-black text-slate-900 font-mono shrink-0">
+                        <span className="font-black text-texto-principal font-mono shrink-0">
                           {formatarMoeda(item.subtotal / 100)}
                         </span>
                       </div>
@@ -240,21 +240,21 @@ function ConteudoMeusPedidos() {
                 </div>
 
                 {/* Footer do Pedido */}
-                <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-slate-500">
-                  <span>Forma de Pagamento: <strong className="text-slate-800 uppercase">{pedido.payment_method || 'Pix/Cartão'}</strong></span>
-                  <span>Retirada / Entrega: <strong className="text-slate-800">Diretamente com a Atlética</strong></span>
+                <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-texto-secundario">
+                  <span>Forma de Pagamento: <strong className="text-texto-principal uppercase">{pedido.payment_method || 'Pix/Cartão'}</strong></span>
+                  <span>Retirada / Entrega: <strong className="text-texto-principal">Diretamente com a Atlética</strong></span>
                 </div>
               </div>
             );
           })}
         </div>
       ) : (
-        <div className="py-16 text-center rounded-3xl bg-white border border-slate-200 p-8 space-y-4 max-w-md mx-auto shadow-sm">
-          <div className="w-16 h-16 rounded-2xl bg-slate-100 mx-auto flex items-center justify-center text-slate-400">
+        <div className="py-16 text-center rounded-3xl bg-fundo-card border border-borda-sutil p-8 space-y-4 max-w-md mx-auto shadow-sm">
+          <div className="w-16 h-16 rounded-2xl bg-fundo-elevado mx-auto flex items-center justify-center text-texto-terciario">
             <ShoppingCart size={28} />
           </div>
-          <h3 className="text-lg font-bold text-slate-900 font-titulo">Nenhum pedido encontrado</h3>
-          <p className="text-xs text-slate-500 leading-relaxed">
+          <h3 className="text-lg font-bold text-texto-principal font-titulo">Nenhum pedido encontrado</h3>
+          <p className="text-xs text-texto-secundario leading-relaxed">
             Você ainda não realizou compras na loja de produtos oficiais das atléticas.
           </p>
           <Link href="/loja">

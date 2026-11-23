@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;600;700;800;900&display=swap');
 @import "leaflet/dist/leaflet.css";
 @import "tailwindcss";
 
@@ -22,6 +22,23 @@
   --color-cinetica-marinho: #121826;
   --color-cinetica-marinho-card: #1b2336;
   --color-cinetica-vermelho: #dc2626;
+
+  /* Nova identidade jovem: azul-marinho profundo + amarelo dourado */
+  --color-ouro: #f2c14e;
+  --color-ouro-vivo: #ffd25e;
+  --color-ouro-claro: #ffe9a8;
+  --color-ouro-classico: #c59941;
+  --color-ouro-escuro: #8a6a1f;
+  --color-azul-950: #050918;
+  --color-azul-900: #081029;
+  --color-azul-850: #0c1636;
+  --color-azul-800: #111d45;
+  --color-azul-700: #1a2a5e;
+  --color-azul-600: #243b80;
+  --color-azul-eletrico: #3d63ff;
+
+  /* Texto em destaque dourado (ajusta ao tema) */
+  --color-destaque: #9a7228;
 
   /* Secondary / Complementary */
   --color-secundaria-50: #f8fafc;
@@ -60,8 +77,9 @@
   --color-info: #0284c7;
 
   /* Typography */
-  --font-titulo: 'Outfit', 'Inter', system-ui, sans-serif;
-  --font-corpo: 'Inter', system-ui, sans-serif;
+  --font-titulo: 'Bricolage Grotesque', 'Outfit', system-ui, sans-serif;
+  --font-display: 'Bricolage Grotesque', 'Outfit', system-ui, sans-serif;
+  --font-corpo: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
 
   /* Shadows */
   --shadow-glass: 0 8px 30px rgba(0, 0, 0, 0.06);
@@ -136,11 +154,9 @@ body {
   background: #ffffff;
 }
 
+/* Destaque de título em cor sólida (sem gradiente) */
 .gradiente-texto {
-  background: linear-gradient(135deg, #121826 0%, #c59941 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--color-destaque);
 }
 
 /* Class Utilities */
@@ -401,3 +417,348 @@ button, a, input, select, textarea {
   scrollbar-width: none;
 }
 
+
+/* =====================================================================
+   TEMA CINÉTICA (área pública): visual jovem, escuro e vibrante.
+   Azul-marinho profundo como base, amarelo dourado como energia.
+   Os tokens semânticos (fundo/texto/borda) são redefinidos aqui, então
+   todo componente que usa tokens se adapta automaticamente.
+   ===================================================================== */
+:root:has(.tema-cinetica),
+.tema-cinetica {
+  --color-fundo-principal: #070d22;
+  --color-fundo-card: #0d1633;
+  --color-fundo-elevado: #142048;
+  --color-fundo-input: #0a1229;
+  --color-fundo-hover: #1a2857;
+
+  --color-texto-principal: #f7f4ec;
+  --color-texto-secundario: #aab4d4;
+  --color-texto-terciario: #6d79a3;
+  --color-texto-invertido: #070d22;
+
+  --color-borda-sutil: rgba(170, 190, 255, 0.10);
+  --color-borda-media: rgba(170, 190, 255, 0.20);
+  --color-borda-forte: rgba(242, 193, 78, 0.7);
+
+  --color-destaque: #f2c14e;
+
+  --shadow-card: 0 10px 30px -12px rgba(0, 0, 0, 0.6);
+  --shadow-glass: 0 20px 50px -20px rgba(0, 0, 0, 0.7);
+
+  color-scheme: dark;
+}
+
+:root:has(.tema-cinetica) body {
+  background-color: #070d22;
+  color: #f7f4ec;
+}
+
+:root:has(.tema-cinetica) * {
+  scrollbar-color: #f2c14e #070d22;
+}
+
+.tema-cinetica {
+  background-color: var(--color-fundo-principal);
+  color: var(--color-texto-principal);
+}
+
+.tema-cinetica ::selection {
+  background: #f2c14e;
+  color: #070d22;
+}
+
+.tema-cinetica select option {
+  background: #0d1633;
+  color: #f7f4ec;
+}
+
+/* Vidro adaptado ao tema escuro */
+:root:has(.tema-cinetica) .vidro,
+:root:has(.tema-cinetica) .vidro-forte,
+:root:has(.tema-cinetica) .vidro-claro {
+  background: rgba(13, 22, 51, 0.94);
+  border-color: var(--color-borda-media);
+  box-shadow: 0 20px 50px -20px rgba(0, 0, 0, 0.7);
+}
+
+.tema-cinetica .skeleton::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+}
+
+/* ---------- Tipografia de impacto ---------- */
+.titulo-display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 0.92;
+}
+
+.texto-contorno {
+  color: transparent;
+  -webkit-text-stroke: 2px #f2c14e;
+}
+
+/* Destaque dourado em cor sólida (sem gradiente) */
+.texto-ouro {
+  color: #f2c14e;
+}
+
+/* ---------- Fundos ---------- */
+.fundo-grade {
+  background-image:
+    linear-gradient(rgba(170, 190, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(170, 190, 255, 0.06) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+.fundo-pontos {
+  background-image: radial-gradient(rgba(242, 193, 78, 0.18) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+.fundo-granulado {
+  position: relative;
+  isolation: isolate;
+}
+.fundo-granulado::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.brilho-ouro {
+  position: absolute;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(242, 193, 78, 0.35), transparent 65%);
+  filter: blur(40px);
+  pointer-events: none;
+}
+
+.brilho-azul {
+  position: absolute;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(61, 99, 255, 0.35), transparent 65%);
+  filter: blur(50px);
+  pointer-events: none;
+}
+
+/* ---------- Componentes ---------- */
+.cartao-pop {
+  position: relative;
+  background: var(--color-fundo-card);
+  border: 1px solid var(--color-borda-sutil);
+  border-radius: 1.5rem;
+  transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), border-color 200ms ease, box-shadow 300ms ease;
+}
+.cartao-pop:hover {
+  transform: translateY(-6px) rotate(-0.4deg);
+  border-color: rgba(242, 193, 78, 0.55);
+  box-shadow: 0 24px 50px -20px rgba(242, 193, 78, 0.35);
+}
+
+.botao-pop {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  background: #f2c14e;
+  color: #070d22;
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  box-shadow: 0 5px 0 #8a6a1f;
+  transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease;
+  cursor: pointer;
+}
+.botao-pop:hover {
+  background: #ffd25e;
+  transform: translateY(-2px);
+  box-shadow: 0 7px 0 #8a6a1f;
+}
+.botao-pop:active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 #8a6a1f;
+}
+.botao-pop:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.botao-vazado {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  border: 2px solid rgba(247, 244, 236, 0.85);
+  color: #f7f4ec;
+  font-family: var(--font-display);
+  font-weight: 800;
+  transition: all 150ms ease;
+  cursor: pointer;
+}
+.botao-vazado:hover {
+  background: #f7f4ec;
+  color: #070d22;
+}
+
+.selo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 9999px;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.adesivo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 0.75rem;
+  background: #f2c14e;
+  color: #070d22;
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  transform: rotate(-4deg);
+  box-shadow: 3px 3px 0 #070d22;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  white-space: nowrap;
+  border-radius: 9999px;
+  padding: 0.55rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid var(--color-borda-media);
+  color: var(--color-texto-secundario);
+  background: var(--color-fundo-card);
+  transition: all 150ms ease;
+  cursor: pointer;
+}
+.chip:hover {
+  color: var(--color-texto-principal);
+  border-color: rgba(242, 193, 78, 0.5);
+}
+.chip[data-ativo='true'] {
+  background: #f2c14e;
+  border-color: #f2c14e;
+  color: #070d22;
+}
+
+.campo-pop {
+  width: 100%;
+  border-radius: 9999px;
+  background: var(--color-fundo-input);
+  border: 1px solid var(--color-borda-media);
+  color: var(--color-texto-principal);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+.campo-pop::placeholder {
+  color: var(--color-texto-terciario);
+}
+.campo-pop:focus,
+.campo-pop:focus-within {
+  outline: none;
+  border-color: #f2c14e;
+  box-shadow: 0 0 0 4px rgba(242, 193, 78, 0.15);
+}
+
+/* ---------- Faixa rolante (marquee) ---------- */
+@keyframes faixa-rolar {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.faixa-rolante {
+  display: flex;
+  width: max-content;
+  animation: faixa-rolar 28s linear infinite;
+}
+.faixa-rolante-lenta {
+  animation-duration: 45s;
+}
+
+@keyframes balancar {
+  0%, 100% { transform: rotate(-6deg); }
+  50% { transform: rotate(4deg); }
+}
+.animar-balancar {
+  animation: balancar 4s ease-in-out infinite;
+}
+
+@keyframes subir-suave {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animar-subir {
+  animation: subir-suave 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .faixa-rolante,
+  .animar-balancar,
+  .animar-subir,
+  .animar-flutuar {
+    animation: none !important;
+  }
+  .cartao-pop:hover {
+    transform: none;
+  }
+}
+
+/* No celular, o aviso de cookies fica acima da barra de navegação inferior */
+@media (max-width: 1023px) {
+  :root:has(.tema-cinetica) .banner-cookies {
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ---------- Faixa dupla da página inicial ---------- */
+.faixa-rolante-reversa {
+  animation-direction: reverse;
+}
+.faixa-pausavel:hover .faixa-rolante {
+  animation-play-state: paused;
+}
+.texto-contorno-azul {
+  color: transparent;
+  -webkit-text-stroke: 2px #070d22;
+}
+/* Listras diagonais nas bordas, estilo fita de isolamento */
+.fita-listrada::before,
+.fita-listrada::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: repeating-linear-gradient(-45deg, #070d22 0 10px, transparent 10px 20px);
+  opacity: 0.85;
+}
+.fita-listrada::before { top: 0; }
+.fita-listrada::after { bottom: 0; }
+
+/* Etiqueta de preço do hero: balança presa pelo fio */
+@keyframes balancar-etiqueta {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(4deg); }
+}
+.animar-balancar-etiqueta {
+  animation: balancar-etiqueta 3.2s ease-in-out infinite;
+}

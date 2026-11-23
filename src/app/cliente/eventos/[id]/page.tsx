@@ -4,24 +4,21 @@ import { criarClienteAdmin } from '@/lib/supabase/admin';
 import ConteudoDetalheEvento from '@/componentes/eventos/ConteudoDetalheEvento';
 import ComponenteJsonLdEvento from '@/componentes/seo/SeoJsonLd';
 import type { EventoCompleto } from '@/lib/cacheEventos';
+import { obterUrlSite } from '@/lib/dominios';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function resolverUrlAbsolutaImagem(urlStr?: string | null): string {
   if (!urlStr) {
-    const dominio = (process.env.NEXT_PUBLIC_DOMINIO_PRINCIPAL || 'meuingrss.com.br').replace(/\/+$/, '');
-    const protocolo = process.env.NEXT_PUBLIC_PROTOCOLO || 'https';
-    return `${protocolo}://${dominio}/cinetica-logo.png`;
+    return `${obterUrlSite()}/cinetica-logo.png`;
   }
 
   if (urlStr.startsWith('http://') || urlStr.startsWith('https://')) {
     return urlStr;
   }
 
-  const dominio = (process.env.NEXT_PUBLIC_DOMINIO_PRINCIPAL || 'meuingrss.com.br').replace(/\/+$/, '');
-  const protocolo = process.env.NEXT_PUBLIC_PROTOCOLO || 'https';
   const path = urlStr.startsWith('/') ? urlStr : `/${urlStr}`;
-  return `${protocolo}://${dominio}${path}`;
+  return `${obterUrlSite()}${path}`;
 }
 
 export async function generateMetadata({
@@ -33,7 +30,7 @@ export async function generateMetadata({
   const eventoIdParam = resolvedParams?.id || '';
 
   if (!eventoIdParam) {
-    return { title: 'Evento | meuingrss' };
+    return { title: 'Evento | Cinética' };
   }
 
   const ehUUID = UUID_REGEX.test(eventoIdParam);
@@ -54,24 +51,22 @@ export async function generateMetadata({
 
   if (!evento) {
     return {
-      title: 'Evento Não Encontrado | meuingrss',
-      description: 'O evento solicitado não foi encontrado no meuingrss.',
+      title: 'Evento Não Encontrado | Cinética',
+      description: 'O evento solicitado não foi encontrado na Cinética.',
       robots: { index: false, follow: false },
     };
   }
 
-  const titulo = `${evento.titulo} — Ingressos em ${evento.cidade || 'Palmas'} | meuingrss`;
+  const titulo = `${evento.titulo} — Ingressos em ${evento.cidade || 'Palmas'} | Cinética`;
   const descricao =
     evento.descricao
       ? (evento.descricao.length > 155 ? `${evento.descricao.slice(0, 152)}...` : evento.descricao)
       : `Garanta seu ingresso para ${evento.titulo} em ${evento.local || 'Palmas'}${
           evento.cidade ? `, ${evento.cidade}` : ''
-        }. Compre online com segurança via Pix ou Cartão no meuingrss!`;
+        }. Compre online com segurança via Pix ou Cartão na Cinética!`;
 
   const imagemUrl = resolverUrlAbsolutaImagem(evento.imagem_url);
-  const dominioPrincipal = (process.env.NEXT_PUBLIC_DOMINIO_PRINCIPAL || 'meuingrss.com.br').replace(/\/+$/, '');
-  const protocolo = process.env.NEXT_PUBLIC_PROTOCOLO || 'https';
-  const urlPagina = `${protocolo}://${dominioPrincipal}/eventos/${evento.slug || evento.id}`;
+  const urlPagina = `${obterUrlSite()}/eventos/${evento.slug || evento.id}`;
 
   return {
     title: titulo,
@@ -93,7 +88,7 @@ export async function generateMetadata({
       title: titulo,
       description: descricao,
       url: urlPagina,
-      siteName: 'meuingrss',
+      siteName: 'Cinética',
       locale: 'pt_BR',
       type: 'website',
       images: [
@@ -160,9 +155,7 @@ export default async function PaginaDetalheEventoServer({
     redirect(`/eventos/${eventoInicial.slug}`);
   }
 
-  const dominioPrincipal = (process.env.NEXT_PUBLIC_DOMINIO_PRINCIPAL || 'meuingrss.com.br').replace(/\/+$/, '');
-  const protocolo = process.env.NEXT_PUBLIC_PROTOCOLO || 'https';
-  const urlPagina = `${protocolo}://${dominioPrincipal}/eventos/${eventoInicial.slug || eventoInicial.id}`;
+  const urlPagina = `${obterUrlSite()}/eventos/${eventoInicial.slug || eventoInicial.id}`;
   const imagemUrl = resolverUrlAbsolutaImagem(eventoInicial.imagem_url);
 
   // Lotes ativos
@@ -200,7 +193,7 @@ export default async function PaginaDetalheEventoServer({
 
       {/* 2. Bloco HTML Semântico embutido no HTML inicial retornado pelo servidor para crawlers de IA e Googlebot */}
       <article className="sr-only" aria-label={`Informações do evento ${eventoInicial.titulo}`}>
-        <h1>{eventoInicial.titulo} — Ingressos em {eventoInicial.cidade || 'Palmas'}</h1>
+        <h2>{eventoInicial.titulo} — Ingressos em {eventoInicial.cidade || 'Palmas'}</h2>
         <p><strong>Organização:</strong> {eventoInicial.atletica?.nome || 'Atlética Organizadora'}</p>
         <p><strong>Data e Horário:</strong> {dataFormatadaStr}</p>
         <p><strong>Localização:</strong> {eventoInicial.local || 'Endereço a definir'}{eventoInicial.cidade ? `, ${eventoInicial.cidade}` : ''}</p>
@@ -209,7 +202,7 @@ export default async function PaginaDetalheEventoServer({
         <h2>Sobre o Evento</h2>
         <div>
           {eventoInicial.descricao ||
-            `Compre seu ingresso online para ${eventoInicial.titulo}. Entrada segura via QR Code digital no meuingrss.`}
+            `Compre seu ingresso online para ${eventoInicial.titulo}. Entrada segura via QR Code digital na Cinética.`}
         </div>
 
         <h2>Ingressos e Lotes Disponíveis</h2>
@@ -224,13 +217,13 @@ export default async function PaginaDetalheEventoServer({
         <h2>Perguntas Frequentes</h2>
         <section>
           <h3>Como recebo meu ingresso para {eventoInicial.titulo}?</h3>
-          <p>O ingresso é gerado digitalmente em formato QR Code em sua conta do meuingrss logo após a confirmação do pagamento por Pix ou Cartão.</p>
+          <p>O ingresso é gerado digitalmente em formato QR Code em sua conta da Cinética logo após a confirmação do pagamento por Pix ou Cartão.</p>
 
           <h3>Onde acontecerá {eventoInicial.titulo}?</h3>
           <p>O evento será realizado em {eventoInicial.local || 'Palmas/TO'}{eventoInicial.cidade ? `, ${eventoInicial.cidade}` : ''}.</p>
 
           <h3>Como comprar?</h3>
-          <p>Acesse meuingrss.com.br, selecione o lote desejado para {eventoInicial.titulo} e conclua o pagamento com segurança.</p>
+          <p>Acesse o site da Cinética, selecione o lote desejado para {eventoInicial.titulo} e conclua o pagamento com segurança.</p>
         </section>
       </article>
 

@@ -208,7 +208,15 @@ describe('POST /api/diretor/lotes', () => {
     expect(res.status).toBe(403);
   });
 
-  it('diretor ativo altera o lote da própria atlética', async () => {
+  it('qualquer diretor ativo gerencia lotes (sistema exclusivo da Cinética, sem vínculo no perfil)', async () => {
+    estado.sessao = { user: { id: 'u', email: 'd@d.com' }, perfil: { role: 'diretor', status: 'ativo', atletica_id: null } };
+    const { POST } = await import('@/app/api/diretor/lotes/route');
+    const res = await POST(req({ evento_id: EVT_B, lote_id: LOTE_B, nome_lote: 'VIP 3', preco: 300, quantidade_total: 30 }));
+    expect(res.status).toBe(200);
+    expect(estado.fake.tabelas.lotes_ingresso[0]).toMatchObject({ preco: 300, nome_lote: 'VIP 3' });
+  });
+
+  it('diretor ativo altera o lote', async () => {
     estado.sessao = { user: { id: 'u', email: 'd@d.com' }, perfil: { role: 'diretor', status: 'ativo', atletica_id: ATL_B } };
     const { POST } = await import('@/app/api/diretor/lotes/route');
     const res = await POST(req({ evento_id: EVT_B, lote_id: LOTE_B, nome_lote: 'VIP 2', preco: 250, quantidade_total: 20 }));

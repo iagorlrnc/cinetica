@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
   calcularProgressoCotas,
+  ehErroTabelaSorteiosAusente,
+  ehBilhetePremiado,
+  formatarNumeroBilhete,
+  traduzirErroBilhete,
+  validarRegistroBilhetes,
   cotasRestantes,
   montarLinkWhatsapp,
   ordenarSorteios,
@@ -110,5 +115,49 @@ describe('validarFormularioSorteio', () => {
     const r = validarFormularioSorteio({ ...FORM_OK, titulo: 'a', premio_principal: '', total_cotas: '0', cotas_vendidas: '0', data_sorteio: '' });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(Object.keys(r.erros).sort()).toEqual(['data_sorteio', 'premio_principal', 'titulo', 'total_cotas']);
+  });
+});
+
+
+describe('ehErroTabelaSorteiosAusente', () => {
+  it('reconhece tabela inexistente no PostgREST e no Postgres', () => {
+    expect(ehErroTabelaSorteiosAusente({ code: 'PGRST205' })).toBe(true);
+    expect(ehErroTabelaSorteiosAusente({ code: '42P01' })).toBe(true);
+  });
+  it('não confunde com outros erros', () => {
+    expect(ehErroTabelaSorteiosAusente({ code: '42501' })).toBe(false);
+    expect(ehErroTabelaSorteiosAusente(null)).toBe(false);
+  });
+});
+
+describe('bilhetes de sorteio', () => {
+  it('formata o número com zeros no tamanho do total', () => {
+    expect(formatarNumeroBilhete(7, 1000)).toBe('0007');
+    expect(formatarNumeroBilhete(42, 50)).toBe('42');
+    expect(formatarNumeroBilhete(3, 9)).toBe('03');
+  });
+
+  it('reconhece o bilhete premiado ignorando zeros e símbolos', () => {
+    expect(ehBilhetePremiado(7, '0007')).toBe(true);
+    expect(ehBilhetePremiado(7, 'Nº 7')).toBe(true);
+    expect(ehBilhetePremiado(70, '0007')).toBe(false);
+    expect(ehBilhetePremiado(7, null)).toBe(false);
+  });
+
+  it('valida o registro de bilhetes', () => {
+    expect(validarRegistroBilhetes({ email: ' Ana@Email.com ', quantidade: '3', restantes: 10 })).toEqual({
+      ok: true,
+      email: 'ana@email.com',
+      quantidade: 3,
+    });
+    expect(validarRegistroBilhetes({ email: 'invalido', quantidade: 1, restantes: 10 }).ok).toBe(false);
+    expect(validarRegistroBilhetes({ email: 'a@b.com', quantidade: 0, restantes: 10 }).ok).toBe(false);
+    expect(validarRegistroBilhetes({ email: 'a@b.com', quantidade: 101, restantes: 500 }).ok).toBe(false);
+    expect(validarRegistroBilhetes({ email: 'a@b.com', quantidade: 5, restantes: 4 }).ok).toBe(false);
+  });
+
+  it('traduz erros da RPC', () => {
+    expect(traduzirErroBilhete('usuario_nao_encontrado')).toMatch(/Nenhuma conta/);
+    expect(traduzirErroBilhete('desconhecido')).toMatch(/Tente novamente/);
   });
 });

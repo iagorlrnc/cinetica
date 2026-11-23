@@ -91,13 +91,13 @@ function ContadorPix({
   }
 
   return (
-    <div className="flex items-center justify-between p-3 sm:p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-      <div className="flex items-center gap-2 text-xs text-slate-600">
-        <Clock size={16} className="text-[#c59941] shrink-0" />
+    <div className="flex items-center justify-between p-3 sm:p-3.5 rounded-xl bg-fundo-elevado/60 border border-borda-sutil">
+      <div className="flex items-center gap-2 text-xs text-texto-secundario">
+        <Clock size={16} className="text-ouro shrink-0" />
         Expira em:
       </div>
       {segundosRestantes !== null && segundosRestantes > 0 ? (
-        <span className="font-mono text-xs sm:text-sm font-bold text-[#c59941]">
+        <span className="font-mono text-xs sm:text-sm font-bold text-ouro">
           {formatarTempo(segundosRestantes)}
         </span>
       ) : (
@@ -279,7 +279,7 @@ export default function CheckoutTransparenteLoja({
     return {
       amount: totalReais,
       payer: {
-        email: usuario.email || 'comprador@meuingrss.com.br',
+        email: usuario.email || 'comprador@example.com',
       },
     };
   }, [totalReais, usuario.email]);
@@ -368,38 +368,38 @@ export default function CheckoutTransparenteLoja({
   if (ehGratuito) {
     return (
       <div className="w-full space-y-4 sm:space-y-6">
-        <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200 shadow-sm space-y-6 text-center">
+        <div className="p-6 sm:p-8 rounded-3xl bg-fundo-card border border-borda-sutil shadow-sm space-y-6 text-center">
           {gratuitoAprovado ? (
-            <div className="py-6 flex flex-col items-center justify-center gap-3 bg-emerald-50 rounded-2xl border border-emerald-200 p-6">
-              <CheckCircle2 size={48} className="text-emerald-600 animate-bounce" />
-              <h3 className="text-xl sm:text-2xl font-bold font-titulo text-slate-900">
+            <div className="py-6 flex flex-col items-center justify-center gap-3 bg-emerald-500/10 rounded-2xl border border-emerald-500/30 p-6">
+              <CheckCircle2 size={48} className="text-emerald-400 animate-bounce" />
+              <h3 className="text-xl sm:text-2xl font-bold font-titulo text-texto-principal">
                 Pedido Confirmado com Sucesso!
               </h3>
-              <p className="text-xs sm:text-sm text-slate-600">
+              <p className="text-xs sm:text-sm text-texto-secundario">
                 Seu produto gratuito foi reservado e vinculado à sua conta. Redirecionando para seus pedidos...
               </p>
             </div>
           ) : (
             <>
-              <div className="w-16 h-16 rounded-2xl bg-emerald-50 border border-emerald-200 mx-auto flex items-center justify-center text-emerald-600 shadow-md">
+              <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 mx-auto flex items-center justify-center text-emerald-400 shadow-md">
                 <Gift size={32} />
               </div>
 
               <div className="space-y-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
                   <Sparkles size={14} />
                   <span>Produto Gratuito</span>
                 </span>
-                <h3 className="text-xl sm:text-2xl font-black font-titulo text-slate-900">
+                <h3 className="text-xl sm:text-2xl font-black font-titulo text-texto-principal">
                   Resgate Sem Custo
                 </h3>
-                <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
+                <p className="text-xs sm:text-sm text-texto-secundario max-w-md mx-auto leading-relaxed">
                   Este produto possui valor <strong>R$ 0,00</strong> e não requer nenhum pagamento ou cartão de crédito. Clique abaixo para confirmar e vincular aos seus pedidos.
                 </p>
               </div>
 
               {erroGratuito && (
-                <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs sm:text-sm text-red-600 flex items-start gap-2.5 text-left">
+                <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-xs sm:text-sm text-red-400 flex items-start gap-2.5 text-left">
                   <AlertCircle size={16} className="shrink-0 mt-0.5" />
                   <span>{erroGratuito}</span>
                 </div>
@@ -419,8 +419,8 @@ export default function CheckoutTransparenteLoja({
                 </Botao>
               </div>
 
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-500 flex items-center justify-center gap-2">
-                <ShieldCheck size={15} className="text-[#c59941] shrink-0" />
+              <div className="p-3 rounded-xl bg-fundo-elevado/60 border border-borda-sutil text-[11px] text-texto-secundario flex items-center justify-center gap-2">
+                <ShieldCheck size={15} className="text-ouro shrink-0" />
                 <span>Resgate 100% seguro com registro oficial</span>
               </div>
             </>
@@ -434,14 +434,14 @@ export default function CheckoutTransparenteLoja({
   return (
     <div className="w-full space-y-4 sm:space-y-6">
       {/* Seletor de Métodos de Pagamento */}
-      <div className="grid grid-cols-2 gap-2 sm:gap-3 p-1.5 rounded-2xl bg-slate-100 border border-slate-200">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 p-1.5 rounded-2xl bg-fundo-elevado border border-borda-sutil">
         <button
           type="button"
           onClick={() => setMetodo('pix')}
           className={`flex items-center justify-center gap-1.5 sm:gap-2 py-3 px-3 rounded-xl text-xs sm:text-sm font-black uppercase tracking-wider transition-all duration-200 cursor-pointer ${
             metodo === 'pix'
-              ? 'bg-[#c59941] text-slate-950 shadow-md font-black'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+              ? 'bg-ouro text-azul-950 shadow-md font-black'
+              : 'text-texto-secundario hover:text-texto-principal hover:bg-fundo-card/60'
           }`}
         >
           <QrCode size={16} className="shrink-0" />
@@ -453,8 +453,8 @@ export default function CheckoutTransparenteLoja({
           onClick={() => setMetodo('cartao')}
           className={`flex items-center justify-center gap-1.5 sm:gap-2 py-3 px-3 rounded-xl text-xs sm:text-sm font-black uppercase tracking-wider transition-all duration-200 cursor-pointer ${
             metodo === 'cartao'
-              ? 'bg-[#0e1422] text-[#f4d68a] shadow-md font-black'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+              ? 'bg-azul-900 text-ouro-claro shadow-md font-black'
+              : 'text-texto-secundario hover:text-texto-principal hover:bg-fundo-card/60'
           }`}
         >
           <CreditCard size={16} className="shrink-0" />
@@ -464,16 +464,16 @@ export default function CheckoutTransparenteLoja({
 
       {/* PAINEL PIX */}
       <div className={metodo === 'pix' ? 'block' : 'hidden'}>
-        <div className="p-4 sm:p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-4 sm:space-y-6">
+        <div className="p-4 sm:p-6 rounded-2xl bg-fundo-card border border-borda-sutil shadow-sm space-y-4 sm:space-y-6">
           <div className="flex items-center justify-between gap-2">
-            <h4 className="text-sm sm:text-base font-bold font-titulo text-slate-900 flex items-center gap-2">
-              <QrCode className="text-[#c59941] shrink-0" size={18} />
+            <h4 className="text-sm sm:text-base font-bold font-titulo text-texto-principal flex items-center gap-2">
+              <QrCode className="text-ouro shrink-0" size={18} />
               Pagamento via Pix Oficial
             </h4>
           </div>
 
           {erroPix && (
-            <div className="p-3 sm:p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs sm:text-sm text-red-600 flex items-start gap-2.5">
+            <div className="p-3 sm:p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-xs sm:text-sm text-red-400 flex items-start gap-2.5">
               <AlertCircle size={16} className="shrink-0 mt-0.5" />
               <span>{erroPix}</span>
             </div>
@@ -481,9 +481,9 @@ export default function CheckoutTransparenteLoja({
 
           {!dadosPix && !gerandoPix && (
             <div className="text-center py-4 space-y-4">
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              <p className="text-xs sm:text-sm text-texto-secundario leading-relaxed">
                 Clique no botão abaixo para gerar o código Pix e o QR Code de pagamento para o valor total de{' '}
-                <strong className="text-slate-900 text-base">{formatarMoeda(totalReais)}</strong>.
+                <strong className="text-texto-principal text-base">{formatarMoeda(totalReais)}</strong>.
               </p>
 
               <Botao
@@ -491,7 +491,7 @@ export default function CheckoutTransparenteLoja({
                 tamanho="lg"
                 onClick={gerarPagamentoPix}
                 icone={<QrCode size={18} />}
-                className="bg-[#c59941] hover:bg-[#9a7228] text-slate-950 font-black shadow-md"
+                className="bg-ouro hover:bg-ouro-classico text-azul-950 font-black shadow-md"
               >
                 Gerar QR Code Pix
               </Botao>
@@ -507,10 +507,10 @@ export default function CheckoutTransparenteLoja({
           {dadosPix && (
             <div className="space-y-4 sm:space-y-6">
               {pixAprovado ? (
-                <div className="py-6 sm:py-8 flex flex-col items-center justify-center gap-3 text-center bg-emerald-50 rounded-2xl border border-emerald-200 p-4 sm:p-6">
-                  <CheckCircle2 size={40} className="text-emerald-600 animate-bounce" />
-                  <h4 className="text-lg sm:text-xl font-bold text-slate-900">Pagamento Confirmado!</h4>
-                  <p className="text-xs text-slate-500">
+                <div className="py-6 sm:py-8 flex flex-col items-center justify-center gap-3 text-center bg-emerald-500/10 rounded-2xl border border-emerald-500/30 p-4 sm:p-6">
+                  <CheckCircle2 size={40} className="text-emerald-400 animate-bounce" />
+                  <h4 className="text-lg sm:text-xl font-bold text-texto-principal">Pagamento Confirmado!</h4>
+                  <p className="text-xs text-texto-secundario">
                     Seu pedido foi registrado com sucesso. Redirecionando...
                   </p>
                 </div>
@@ -523,7 +523,7 @@ export default function CheckoutTransparenteLoja({
 
                   {pixExpirado ? (
                     <div className="text-center py-4 space-y-3">
-                      <p className="text-xs text-red-600">
+                      <p className="text-xs text-red-400">
                         O tempo de validade do QR Code expirou. Por favor, gere um novo código.
                       </p>
                       <Botao
@@ -539,21 +539,21 @@ export default function CheckoutTransparenteLoja({
                     <>
                       {dadosPix.qr_code_base64 && (
                         <div className="flex flex-col items-center justify-center gap-2">
-                          <div className="p-3 bg-white rounded-2xl border border-slate-200 shadow-md inline-block">
+                          <div className="p-3 bg-[#ffffff] rounded-2xl border border-borda-sutil shadow-md inline-block">
                             <img
                               src={`data:image/jpeg;base64,${dadosPix.qr_code_base64}`}
                               alt="QR Code Pix"
                               className="w-40 h-40 sm:w-48 sm:h-48 object-contain"
                             />
                           </div>
-                          <span className="text-[11px] text-slate-500 text-center">
+                          <span className="text-[11px] text-texto-secundario text-center">
                             Abra o app do seu banco e escaneie o código
                           </span>
                         </div>
                       )}
 
                       <div className="space-y-2">
-                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        <label className="block text-xs font-bold text-texto-secundario uppercase tracking-wider">
                           Ou pague usando o Pix Copia e Cola:
                         </label>
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
@@ -561,7 +561,7 @@ export default function CheckoutTransparenteLoja({
                             type="text"
                             readOnly
                             value={dadosPix.qr_code}
-                            className="flex-1 w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-mono text-slate-800 truncate outline-none"
+                            className="flex-1 w-full bg-fundo-elevado/60 border border-borda-sutil rounded-xl px-3 py-2.5 text-xs font-mono text-texto-principal truncate outline-none"
                           />
                           <Botao
                             variante={copiado ? 'sucesso' : 'primario'}
@@ -575,7 +575,7 @@ export default function CheckoutTransparenteLoja({
                         </div>
                       </div>
 
-                      <div className="p-3 rounded-xl bg-[#c59941]/10 border border-[#c59941]/30 text-xs text-[#9a7228] flex items-center gap-2 leading-relaxed">
+                      <div className="p-3 rounded-xl bg-ouro/10 border border-ouro/30 text-xs text-destaque flex items-center gap-2 leading-relaxed">
                         <ShieldCheck size={16} className="shrink-0" />
                         <span>Aguardando a confirmação do pagamento... Não feche esta tela.</span>
                       </div>
@@ -590,10 +590,10 @@ export default function CheckoutTransparenteLoja({
 
       {/* PAINEL CARTÃO DE CRÉDITO */}
       <div className={metodo === 'cartao' ? 'block' : 'hidden'}>
-        <div className="p-4 sm:p-6 rounded-2xl bg-white border border-slate-200/80 shadow-sm space-y-4 sm:space-y-6">
+        <div className="p-4 sm:p-6 rounded-2xl bg-fundo-card border border-borda-sutil shadow-sm space-y-4 sm:space-y-6">
           <div className="flex items-center justify-between gap-2">
-            <h4 className="text-sm sm:text-base font-bold font-titulo text-slate-900 flex items-center gap-2">
-              <CreditCard className="text-[#c59941] shrink-0" size={18} />
+            <h4 className="text-sm sm:text-base font-bold font-titulo text-texto-principal flex items-center gap-2">
+              <CreditCard className="text-ouro shrink-0" size={18} />
               Criptografado via Mercado Pago
             </h4>
           </div>
@@ -615,7 +615,7 @@ export default function CheckoutTransparenteLoja({
                 <div className="py-6 sm:py-8 flex flex-col items-center justify-center gap-3 text-center bg-emerald-500/10 rounded-2xl border border-emerald-500/30 p-4 sm:p-6">
                   <CheckCircle2 size={40} className="text-emerald-400 animate-bounce" />
                   <h4 className="text-lg sm:text-xl font-bold text-white">Pagamento Aprovado!</h4>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-texto-terciario">
                     Seu pedido foi confirmado com sucesso. Redirecionando...
                   </p>
                 </div>
@@ -649,7 +649,7 @@ export default function CheckoutTransparenteLoja({
             </>
           )}
 
-          <p className="text-[11px] text-slate-400 text-center leading-relaxed">
+          <p className="text-[11px] text-texto-terciario text-center leading-relaxed">
             Seus dados financeiros são criptografados com segurança de ponta a ponta pelo Mercado Pago.
           </p>
         </div>

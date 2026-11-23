@@ -21,11 +21,11 @@ export default function IndicadorForcaSenha({ senha }: IndicadorForcaSenhaProps)
   ];
 
   return (
-    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs animar-entrar-baixo">
+    <div className="p-3 rounded-xl bg-fundo-elevado/60 border border-borda-sutil text-xs animar-entrar-baixo">
       {/* Barra de Status e Rótulo de Força */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between text-xs font-semibold">
-          <div className="flex items-center gap-1.5 text-slate-500">
+          <div className="flex items-center gap-1.5 text-texto-secundario">
             <span className="uppercase tracking-wider text-[10px]">Força da senha</span>
 
             {/* Container Relativo do Ícone Info e Tooltip Flutuante */}
@@ -37,7 +37,7 @@ export default function IndicadorForcaSenha({ senha }: IndicadorForcaSenhaProps)
               <button
                 type="button"
                 onClick={() => setMostrarInfo((prev) => !prev)}
-                className="text-slate-400 hover:text-[#c59941] transition-colors p-0.5 rounded-full hover:bg-slate-200 focus:outline-none cursor-pointer"
+                className="text-texto-terciario hover:text-ouro transition-colors p-0.5 rounded-full hover:bg-fundo-hover focus:outline-none cursor-pointer"
                 aria-label="Ver requisitos da senha"
               >
                 <Info size={14} />
@@ -45,9 +45,9 @@ export default function IndicadorForcaSenha({ senha }: IndicadorForcaSenhaProps)
 
               {/* Tooltip Card Flutuante */}
               {mostrarInfo && (
-                <div className="absolute left-0 sm:-left-2 bottom-full mb-2.5 w-64 max-w-[calc(100vw-3rem)] p-3.5 rounded-2xl bg-[#0e1422] border border-slate-700 shadow-2xl backdrop-blur-xl z-50 animar-entrar-baixo text-xs">
+                <div className="absolute left-0 sm:-left-2 bottom-full mb-2.5 w-64 max-w-[calc(100vw-3rem)] p-3.5 rounded-2xl bg-azul-900 border border-slate-700 shadow-2xl backdrop-blur-xl z-50 animar-entrar-baixo text-xs">
                   {/* Setinha apontando para baixo */}
-                  <div className="absolute -bottom-1.5 left-2.5 w-3 h-3 bg-[#0e1422] border-r border-b border-slate-700 rotate-45" />
+                  <div className="absolute -bottom-1.5 left-2.5 w-3 h-3 bg-azul-900 border-r border-b border-slate-700 rotate-45" />
 
                   <p className="text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-2 border-b border-white/10 pb-1.5">
                     Pré-requisitos da senha
@@ -60,11 +60,11 @@ export default function IndicadorForcaSenha({ senha }: IndicadorForcaSenhaProps)
                             <Check size={10} className="stroke-[3]" />
                           </span>
                         ) : (
-                          <span className="w-4 h-4 rounded-full bg-slate-800 text-slate-500 border border-slate-700 flex items-center justify-center shrink-0">
+                          <span className="w-4 h-4 rounded-full bg-slate-800 text-texto-secundario border border-slate-700 flex items-center justify-center shrink-0">
                             <X size={10} className="stroke-[3]" />
                           </span>
                         )}
-                        <span className={req.atendido ? 'text-emerald-400 font-medium text-[11px]' : 'text-slate-400 text-[11px]'}>
+                        <span className={req.atendido ? 'text-emerald-400 font-medium text-[11px]' : 'text-texto-terciario text-[11px]'}>
                           {req.label}
                         </span>
                       </div>
@@ -78,12 +78,12 @@ export default function IndicadorForcaSenha({ senha }: IndicadorForcaSenhaProps)
           <span
             className={`font-bold text-[11px] ${
               status.forca === 1
-                ? 'text-red-500'
+                ? 'text-red-400'
                 : status.forca === 2
-                ? 'text-amber-500'
+                ? 'text-amber-400'
                 : status.forca === 3
-                ? 'text-emerald-500'
-                : 'text-slate-400'
+                ? 'text-emerald-400'
+                : 'text-texto-terciario'
             }`}
           >
             {status.rotuloForca}
@@ -91,7 +91,7 @@ export default function IndicadorForcaSenha({ senha }: IndicadorForcaSenhaProps)
         </div>
 
         {/* Apenas a Barra de Status */}
-        <div className="flex items-center gap-1.5 h-2 w-full bg-slate-200 rounded-full overflow-hidden p-0.5">
+        <div className="flex items-center gap-1.5 h-2 w-full bg-fundo-hover rounded-full overflow-hidden p-0.5">
           <div
             className={`h-full flex-1 rounded-full transition-all duration-300 ${
               status.forca >= 1
@@ -100,7 +100,7 @@ export default function IndicadorForcaSenha({ senha }: IndicadorForcaSenhaProps)
                   : status.forca === 2
                   ? 'bg-amber-400'
                   : 'bg-emerald-400'
-                : 'bg-slate-300'
+                : 'bg-fundo-hover'
             }`}
           />
           <div
@@ -109,14 +109,14 @@ export default function IndicadorForcaSenha({ senha }: IndicadorForcaSenhaProps)
                 ? status.forca === 2
                   ? 'bg-amber-400'
                   : 'bg-emerald-400'
-                : 'bg-slate-300'
+                : 'bg-fundo-hover'
             }`}
           />
           <div
             className={`h-full flex-1 rounded-full transition-all duration-300 ${
               status.forca >= 3
                 ? 'bg-emerald-400'
-                : 'bg-slate-300'
+                : 'bg-fundo-hover'
             }`}
           />
         </div>

@@ -59,10 +59,7 @@ export default function PaginaValidarEntrada() {
   }, []);
 
   async function buscarEventos() {
-    let atleticaId = perfil?.atletica_id;
-    if (!atleticaId) {
-      atleticaId = (await obterIdAtleticaCinetica(supabase)) || undefined;
-    }
+    const atleticaId = (await obterIdAtleticaCinetica(supabase)) || undefined;
 
     let query = supabase
       .from('eventos')

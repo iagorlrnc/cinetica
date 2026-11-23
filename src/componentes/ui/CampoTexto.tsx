@@ -34,13 +34,13 @@ const CampoTexto = forwardRef<HTMLInputElement | HTMLTextAreaElement, CampoTexto
     const tipoEfetivo = eSenha ? (mostrarSenha ? 'text' : 'password') : type;
 
     const estiloInputBase = cn(
-      'w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-base sm:text-sm min-h-[44px]',
-      'text-slate-900 placeholder:text-slate-400 font-normal shadow-xs',
+      'w-full bg-fundo-input border border-borda-media rounded-2xl px-4 py-3 text-base sm:text-sm min-h-[44px]',
+      'text-texto-principal placeholder:text-texto-terciario font-normal shadow-xs',
       'transition-all duration-200 ease-out',
-      'hover:border-slate-300 hover:bg-white',
-      'focus:outline-none focus:border-[#c59941] focus:ring-2 focus:ring-[#c59941]/25 focus:bg-white',
-      'disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-slate-100',
-      Boolean(erro) && 'border-red-500 focus:border-red-500 focus:ring-red-500/20 bg-red-50/30',
+      'hover:border-borda-forte/40',
+      'focus:outline-none focus:border-ouro focus:ring-4 focus:ring-ouro/15',
+      'disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-fundo-elevado',
+      Boolean(erro) && 'border-red-500 focus:border-red-500 focus:ring-red-500/20 bg-red-500/5',
       Boolean(icone) && 'pl-11',
       eSenha && 'pr-11',
       className
@@ -50,7 +50,7 @@ const CampoTexto = forwardRef<HTMLInputElement | HTMLTextAreaElement, CampoTexto
       <div className="space-y-1.5 w-full">
         {rotulo && (
           <div className="flex items-center justify-between">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+            <label className="block text-xs font-bold uppercase tracking-wider text-texto-secundario">
               {rotulo} {obrigatorio && <span className="text-[#dc2626] ml-0.5">*</span>}
             </label>
           </div>
@@ -58,7 +58,7 @@ const CampoTexto = forwardRef<HTMLInputElement | HTMLTextAreaElement, CampoTexto
 
         <div className="relative group">
           {icone && (
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#c59941] transition-colors pointer-events-none">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-texto-terciario group-focus-within:text-ouro transition-colors pointer-events-none">
               {icone}
             </span>
           )}
@@ -83,7 +83,7 @@ const CampoTexto = forwardRef<HTMLInputElement | HTMLTextAreaElement, CampoTexto
               type="button"
               onClick={() => setMostrarSenha(!mostrarSenha)}
               tabIndex={-1}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors focus:outline-none p-1 rounded-md"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-texto-terciario hover:text-texto-principal transition-colors focus:outline-none p-1 rounded-md"
               title={mostrarSenha ? 'Ocultar senha' : 'Exibir senha'}
             >
               {mostrarSenha ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -92,14 +92,14 @@ const CampoTexto = forwardRef<HTMLInputElement | HTMLTextAreaElement, CampoTexto
         </div>
 
         {erro && (
-          <p className="text-xs text-red-400 font-semibold flex items-center gap-1.5 mt-1 animar-entrar-baixo">
+          <p className="text-xs text-red-500 font-semibold flex items-center gap-1.5 mt-1 animar-entrar-baixo">
             <AlertCircle size={14} className="shrink-0 text-red-400" />
             <span>{erro}</span>
           </p>
         )}
 
         {dica && !erro && (
-          <p className="text-xs text-slate-400 font-normal leading-relaxed mt-1">{dica}</p>
+          <p className="text-xs text-texto-terciario font-normal leading-relaxed mt-1">{dica}</p>
         )}
       </div>
     );

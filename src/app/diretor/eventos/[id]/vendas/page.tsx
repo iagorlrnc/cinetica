@@ -1,5 +1,6 @@
 'use client';
 
+import { usarRotaPainel } from '@/lib/rotasPainel';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -36,6 +37,7 @@ import {
 } from 'lucide-react';
 
 import type { Evento, LoteIngresso, Ingresso } from '@/tipos';
+import { traduzirErroBanco } from '@/lib/errosBanco';
 
 interface IngressoComDetalhes extends Omit<Ingresso, 'lote' | 'comprador'> {
   lote?: {
@@ -54,6 +56,7 @@ interface IngressoComDetalhes extends Omit<Ingresso, 'lote' | 'comprador'> {
 }
 
 export default function PaginaVendas() {
+  const rota = usarRotaPainel();
   const params = useParams();
   const { sucesso, erro: notificarErro } = useNotificacao();
   const supabase = criarClienteNavegador();
@@ -102,7 +105,7 @@ export default function PaginaVendas() {
       setConfirmandoCancelamento(false);
       sucesso('Ingresso cancelado com sucesso', 'O status do ingresso foi alterado para cancelado.');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erro ao cancelar o ingresso.';
+      const msg = traduzirErroBanco(err, 'cancelar o ingresso');
       notificarErro('Erro ao cancelar', msg);
     } finally {
       setProcessandoCancelamento(false);
@@ -272,7 +275,7 @@ export default function PaginaVendas() {
     return (
       <div className="text-center py-12">
         <p className="text-texto-secundario mb-4">Evento não encontrado.</p>
-        <Link href="/eventos">
+        <Link href={rota('/eventos')}>
           <Botao variante="contorno">Voltar para Meus Eventos</Botao>
         </Link>
       </div>
@@ -288,7 +291,7 @@ export default function PaginaVendas() {
     <div className="max-w-6xl mx-auto pb-12">
       {/* Botão de Voltar */}
       <Link
-        href="/eventos"
+        href={rota('/eventos')}
         className="inline-flex items-center gap-2 text-sm text-texto-secundario hover:text-texto-principal transition-colors mb-6"
       >
         <ArrowLeft size={16} /> Voltar para Meus Eventos
@@ -304,7 +307,7 @@ export default function PaginaVendas() {
           <p className="text-texto-secundario">Relatório e Gestão de Vendas & Compradores</p>
         </div>
 
-        <Link href={`/eventos/${evento.slug || evento.id}/lotes`}>
+        <Link href={rota(`/eventos/${evento.slug || evento.id}/lotes`)}>
           <Botao variante="contorno" icone={<Ticket size={16} />}>
             Gerenciar Lotes
           </Botao>

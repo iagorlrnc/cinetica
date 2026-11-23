@@ -88,4 +88,16 @@ describe('obterUrlWebhook', () => {
     expect(obterUrlWebhook()).toBe('https://exemplo.com.br/api/webhook-mercadopago');
     process.env.NEXT_PUBLIC_DOMINIO_PRINCIPAL = antes;
   });
+
+  it('não envia URL sem domínio público configurado (localhost ou vazio)', () => {
+    const antesDominio = process.env.NEXT_PUBLIC_DOMINIO_PRINCIPAL;
+    const antesVercel = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+    delete process.env.VERCEL_PROJECT_PRODUCTION_URL;
+    process.env.NEXT_PUBLIC_DOMINIO_PRINCIPAL = '';
+    expect(obterUrlWebhook()).toBeUndefined();
+    process.env.NEXT_PUBLIC_DOMINIO_PRINCIPAL = 'localhost:3000';
+    expect(obterUrlWebhook()).toBeUndefined();
+    process.env.NEXT_PUBLIC_DOMINIO_PRINCIPAL = antesDominio;
+    if (antesVercel !== undefined) process.env.VERCEL_PROJECT_PRODUCTION_URL = antesVercel;
+  });
 });

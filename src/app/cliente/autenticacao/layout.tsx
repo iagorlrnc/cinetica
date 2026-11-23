@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Autenticação | Cinética Ingressos',
+  title: 'Autenticação | Cinética',
   robots: {
     index: false,
     follow: false,

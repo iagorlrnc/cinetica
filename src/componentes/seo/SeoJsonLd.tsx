@@ -1,5 +1,6 @@
 import type { EventoCompleto } from '../../lib/cacheEventos';
 import { serializarJsonLdSeguro } from '../../lib/jsonLd';
+import { obterUrlSite } from '@/lib/dominios';
 
 interface SeoJsonLdProps {
   evento: EventoCompleto;
@@ -8,9 +9,7 @@ interface SeoJsonLdProps {
 }
 
 export function gerarJsonLdEvento({ evento, urlPagina, imagemUrl }: SeoJsonLdProps) {
-  const dominioPrincipal = (process.env.NEXT_PUBLIC_DOMINIO_PRINCIPAL || 'meuingrss.com.br').replace(/\/+$/, '');
-  const protocolo = process.env.NEXT_PUBLIC_PROTOCOLO || 'https';
-  const baseUrl = `${protocolo}://${dominioPrincipal}`;
+  const baseUrl = obterUrlSite();
 
   const cidade = evento.cidade || 'Palmas';
   const local = evento.local || 'Palmas - TO';
@@ -62,7 +61,7 @@ export function gerarJsonLdEvento({ evento, urlPagina, imagemUrl }: SeoJsonLdPro
     name: evento.titulo,
     description:
       evento.descricao ||
-      `Garanta seu ingresso para ${evento.titulo} em ${local}. Venda online oficial e segura no meuingrss!`,
+      `Garanta seu ingresso para ${evento.titulo} em ${local}. Venda online oficial e segura na Cinética!`,
     startDate: dataInicio,
     endDate: dataFim,
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
@@ -128,7 +127,7 @@ export function gerarJsonLdEvento({ evento, urlPagina, imagemUrl }: SeoJsonLdPro
         name: `Como recebo meu ingresso para ${evento.titulo}?`,
         acceptedAnswer: {
           '@type': 'Answer',
-          text: `Seu ingresso para ${evento.titulo} é liberado instantaneamente na sua conta do meuingrss em formato QR Code assim que o pagamento via Pix ou cartão for confirmado.`,
+          text: `Seu ingresso para ${evento.titulo} é liberado instantaneamente na sua conta da Cinética em formato QR Code assim que o pagamento via Pix ou cartão for confirmado.`,
         },
       },
       {
@@ -149,10 +148,10 @@ export function gerarJsonLdEvento({ evento, urlPagina, imagemUrl }: SeoJsonLdPro
       },
       {
         '@type': 'Question',
-        name: `É seguro comprar ingressos no meuingrss?`,
+        name: `É seguro comprar ingressos na Cinética?`,
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'Sim! O meuingrss é a plataforma oficial parceira das atléticas universitárias. Todos os ingressos contam com validação QR Code única e criptografada.',
+          text: 'Sim! A Cinética é a plataforma oficial parceira das atléticas universitárias. Todos os ingressos contam com validação QR Code única e criptografada.',
         },
       },
     ],

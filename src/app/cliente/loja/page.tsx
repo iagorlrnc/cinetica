@@ -4,19 +4,11 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { criarClienteNavegador } from '@/lib/supabase/cliente';
 import CardProduto from '@/componentes/loja/CardProduto';
-import Carregando from '@/componentes/ui/Carregando';
-import BarraNavegacaoMobile from '@/componentes/layout/BarraNavegacaoMobile';
 import Botao from '@/componentes/ui/Botao';
 import type { ProdutoLoja, Atletica } from '@/tipos';
-import {
-  ShoppingCart,
-  Search,
-  SlidersHorizontal,
-  X,
-  RotateCcw,
-  Check,
-  Trophy,
-} from 'lucide-react';
+import EstadoVazio from '@/componentes/ui/EstadoVazio';
+import TituloSecao from '@/componentes/ui/TituloSecao';
+import { ShoppingBag, Search, SlidersHorizontal, X, RotateCcw, Check } from 'lucide-react';
 
 const ROTULOS_CATEGORIA: { id: string; rotulo: string }[] = [
   { id: 'todas', rotulo: 'Todos os Produtos' },
@@ -44,7 +36,7 @@ function ConteudoLoja() {
   const [ordenacao, setOrdenacao] = useState<'novos' | 'menor_preco' | 'maior_preco'>('novos');
   const [drawerFiltrosAberto, setDrawerFiltrosAberto] = useState(false);
 
-  const supabase = criarClienteNavegador();
+  const [supabase] = useState(() => criarClienteNavegador());
 
   useEffect(() => {
     async function carregarDados() {
@@ -94,7 +86,7 @@ function ConteudoLoja() {
     return acc;
   }, {});
   const CATEGORIAS = [
-    { id: 'todas', rotulo: `Todos os Produtos (${produtos.length})` },
+    { id: 'todas', rotulo: `Tudo (${produtos.length})` },
     ...Object.keys(contagemCategorias)
       .map((id) => ({
         id,
@@ -159,163 +151,155 @@ function ConteudoLoja() {
 
   return (
     <>
-      <BarraNavegacaoMobile />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-12">
-        <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-black font-titulo mb-2 text-slate-900">
-            Loja <span className="gradiente-texto">Oficial</span>
-          </h1>
-          <p className="text-slate-600">
-            Garanta canecas, copos, tirantes, camisas, shorts e acessórios exclusivos da sua atlética.
-          </p>
-        </div>
+      <section className="relative overflow-hidden fundo-granulado border-b border-borda-sutil">
+        <div className="absolute inset-0 fundo-grade [mask-image:linear-gradient(to_bottom,black,transparent)]" aria-hidden="true" />
+        <div className="brilho-ouro w-[480px] h-[480px] -top-56 -right-24 opacity-70" aria-hidden="true" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-8">
+          <TituloSecao
+            nivel="h1"
+            rotulo="Loja oficial"
+            titulo={<>Veste a <span className="texto-ouro">Cinética.</span></>}
+            descricao="Manto, copo, caneca e acessório oficial. Comprou, retirou com a diretoria."
+            className="!mb-8"
+          />
 
-        {/* Barra Limpa de Busca + Botão de Filtros */}
-        <div className="space-y-3 mb-8">
-          <div className="flex items-center gap-3">
-            {/* Input de Busca */}
-            <div className="relative flex-1">
-              <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <div className="flex items-center gap-2">
+            <label className="campo-pop flex items-center gap-3 px-5 h-14 flex-1">
+              <Search size={20} className="text-ouro shrink-0" />
+              <span className="sr-only">Buscar produtos</span>
               <input
-                type="text"
-                placeholder="Buscar produtos por nome ou descrição..."
+                type="search"
+                placeholder="Camisa, caneca, tirante..."
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-2xl pl-10 pr-4 py-3 text-sm text-slate-900 placeholder-slate-400 outline-none focus:border-[#c59941] transition-all shadow-sm"
+                maxLength={80}
+                className="w-full bg-transparent text-base text-texto-principal placeholder:text-texto-terciario outline-none"
               />
               {busca && (
                 <button
                   type="button"
                   onClick={() => setBusca('')}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1 rounded-full hover:bg-slate-100 transition-all cursor-pointer"
-                  title="Limpar busca"
+                  aria-label="Limpar busca"
+                  className="text-texto-terciario hover:text-texto-principal p-1 rounded-full cursor-pointer"
                 >
-                  <X size={16} />
+                  <X size={18} />
                 </button>
               )}
-            </div>
-
-            {/* Botão Único de Filtros */}
+            </label>
             <button
               type="button"
               onClick={() => setDrawerFiltrosAberto(true)}
-              className={`flex items-center gap-2.5 px-4 sm:px-5 py-3 rounded-2xl text-xs sm:text-sm font-black uppercase tracking-wider transition-all duration-200 cursor-pointer shrink-0 border ${
-                totalFiltrosAtivos > 0
-                  ? 'bg-[#c59941] text-slate-950 border-[#c59941] shadow-md shadow-[#c59941]/20'
-                  : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-              }`}
+              aria-label="Abrir filtros"
+              data-ativo={totalFiltrosAtivos > 0}
+              className="chip h-14 px-5 shrink-0"
             >
-              <SlidersHorizontal size={18} className={totalFiltrosAtivos > 0 ? "text-slate-950" : "text-[#c59941]"} />
-              <span>Filtros</span>
+              <SlidersHorizontal size={18} />
+              <span className="hidden sm:inline">Filtros</span>
               {totalFiltrosAtivos > 0 && (
-                <span className="w-5 h-5 rounded-full bg-slate-950 text-[#f4d68a] text-[11px] font-black flex items-center justify-center">
+                <span className="min-w-5 h-5 px-1 rounded-full bg-azul-950 text-ouro text-[11px] font-black flex items-center justify-center">
                   {totalFiltrosAtivos}
                 </span>
               )}
             </button>
           </div>
 
-          {/* Tags de Filtros Ativos (quando selecionados) */}
-          {totalFiltrosAtivos > 0 && (
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                Filtros aplicados:
-              </span>
-
-              {categoriaAtiva !== 'todas' && categoriaObjeto && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-[#c59941]/10 text-[#9a7228] border border-[#c59941]/30">
-                  <span>Categoria: {categoriaObjeto.rotulo}</span>
-                  <button
-                    type="button"
-                    onClick={() => setCategoriaAtiva('todas')}
-                    className="hover:text-slate-900 cursor-pointer"
-                  >
-                    <X size={12} />
-                  </button>
-                </span>
-              )}
-
-              {atleticaSelecionada && atleticaObjeto && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-[#0e1422]/10 text-[#0e1422] border border-[#0e1422]/20">
-                  <span>Atlética: {atleticaObjeto.nome}</span>
-                  <button
-                    type="button"
-                    onClick={() => setAtleticaSelecionada('')}
-                    className="hover:text-slate-900 cursor-pointer"
-                  >
-                    <X size={12} />
-                  </button>
-                </span>
-              )}
-
-              {ordenacao !== 'novos' && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-200/60 text-slate-700 border border-slate-300">
-                  <span>Ordem: {ordenacao === 'menor_preco' ? 'Menor Preço' : 'Maior Preço'}</span>
-                  <button
-                    type="button"
-                    onClick={() => setOrdenacao('novos')}
-                    className="hover:text-slate-900 cursor-pointer"
-                  >
-                    <X size={12} />
-                  </button>
-                </span>
-              )}
-
+          {CATEGORIAS.length > 1 && (
+            <div className="mt-4 flex gap-2 overflow-x-auto sem-barra-rolagem -mx-4 px-4 sm:mx-0 sm:px-0">
+              {CATEGORIAS.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  data-ativo={categoriaAtiva === cat.id}
+                  aria-pressed={categoriaAtiva === cat.id}
+                  onClick={() => setCategoriaAtiva(cat.id)}
+                  className="chip"
+                >
+                  {cat.rotulo}
+                </button>
+              ))}
               <button
                 type="button"
-                onClick={limparTodosFiltros}
-                className="text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-slate-900 underline cursor-pointer ml-1"
+                data-ativo={somenteDisponiveis}
+                aria-pressed={somenteDisponiveis}
+                onClick={() => setSomenteDisponiveis((v) => !v)}
+                className="chip"
               >
-                Limpar todos
+                {somenteDisponiveis && <Check size={14} />} Só disponíveis
               </button>
             </div>
           )}
         </div>
+      </section>
 
-        {/* Grid de Produtos (Sempre 2 Colunas no Celular) */}
-        {erroCarga && !carregando ? (
-          <div className="py-16 text-center rounded-3xl bg-white border border-slate-200 p-8 space-y-4 max-w-md mx-auto shadow-sm">
-            <h3 className="text-lg font-bold text-slate-900 font-titulo">Não foi possível carregar a loja</h3>
-            <p className="text-xs text-slate-500">Verifique sua conexão e tente novamente.</p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 pb-20">
+        {totalFiltrosAtivos > 0 && !carregando && (
+          <div className="flex flex-wrap items-center gap-2 mb-6">
+            {atleticaSelecionada && atleticaObjeto && (
+              <span className="selo bg-fundo-card border border-borda-media text-texto-principal normal-case tracking-normal">
+                Atlética: {atleticaObjeto.nome}
+                <button type="button" aria-label="Remover filtro de atlética" onClick={() => setAtleticaSelecionada('')} className="cursor-pointer">
+                  <X size={12} />
+                </button>
+              </span>
+            )}
+            {ordenacao !== 'novos' && (
+              <span className="selo bg-fundo-card border border-borda-media text-texto-principal normal-case tracking-normal">
+                {ordenacao === 'menor_preco' ? 'Menor preço' : 'Maior preço'}
+                <button type="button" aria-label="Remover ordenação" onClick={() => setOrdenacao('novos')} className="cursor-pointer">
+                  <X size={12} />
+                </button>
+              </span>
+            )}
             <button
               type="button"
-              onClick={() => setTentativa((t) => t + 1)}
-              className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold uppercase tracking-wider inline-flex items-center gap-2"
+              onClick={limparTodosFiltros}
+              className="text-xs font-bold text-texto-secundario hover:text-ouro underline underline-offset-4 cursor-pointer"
             >
-              <RotateCcw size={14} /> Tentar novamente
+              Limpar tudo
             </button>
           </div>
+        )}
+
+        {erroCarga && !carregando ? (
+          <EstadoVazio
+            titulo="Não foi possível carregar a loja"
+            descricao="Verifique sua conexão e tente novamente."
+            icone={<RotateCcw className="w-7 h-7" />}
+            acao={
+              <Botao variante="primario" onClick={() => setTentativa((t) => t + 1)}>
+                Tentar novamente
+              </Botao>
+            }
+          />
         ) : carregando ? (
-          <div className="py-20 flex flex-col items-center justify-center gap-3">
-            <Carregando tamanho="lg" texto="Carregando produtos da loja..." />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="skeleton aspect-[4/5] rounded-[1.75rem]" />
+            ))}
           </div>
         ) : produtosFiltrados.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10">
             {produtosFiltrados.map((produto) => (
               <CardProduto key={produto.id} produto={produto} />
             ))}
           </div>
         ) : (
-          <div className="py-16 text-center rounded-3xl bg-white border border-slate-200 p-8 space-y-4 max-w-md mx-auto shadow-sm">
-            <div className="w-16 h-16 rounded-2xl bg-slate-100 mx-auto flex items-center justify-center text-slate-400">
-              <ShoppingCart size={28} />
-            </div>
-            <h3 className="text-lg font-bold text-slate-900 font-titulo">Nenhum produto encontrado</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              {busca || totalFiltrosAtivos > 0
-                ? 'Tente remover alguns filtros ou buscar por outro termo.'
-                : 'Ainda não há produtos cadastrados na loja oficial.'}
-            </p>
-            {(busca || totalFiltrosAtivos > 0) && (
-              <button
-                type="button"
-                onClick={limparTodosFiltros}
-                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
-              >
-                Limpar Filtros
-              </button>
-            )}
-          </div>
+          <EstadoVazio
+            titulo={busca || totalFiltrosAtivos > 0 ? 'Nada encontrado' : 'Loja abastecendo'}
+            descricao={
+              busca || totalFiltrosAtivos > 0
+                ? 'Tenta tirar algum filtro ou buscar outro termo.'
+                : 'Ainda não há produtos cadastrados na loja oficial.'
+            }
+            icone={<ShoppingBag className="w-7 h-7" />}
+            acao={
+              busca || totalFiltrosAtivos > 0 ? (
+                <Botao variante="contorno" onClick={limparTodosFiltros}>
+                  Limpar filtros
+                </Botao>
+              ) : undefined
+            }
+          />
         )}
       </div>
 
@@ -329,23 +313,23 @@ function ConteudoLoja() {
           />
 
           {/* Painel Lateral */}
-          <aside className="relative z-10 w-full max-w-md bg-white border-l border-slate-200 flex flex-col h-full shadow-2xl animate-in slide-in-from-right duration-300">
+          <aside className="relative z-10 w-full max-w-md bg-fundo-card border-l border-borda-media rounded-l-[2rem] overflow-hidden flex flex-col h-full shadow-2xl animate-in slide-in-from-right duration-300">
             {/* Header do Drawer */}
-            <div className="p-5 sm:p-6 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+            <div className="p-5 sm:p-6 border-b border-borda-sutil flex items-center justify-between bg-fundo-elevado/60">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#c59941]/10 text-[#c59941] border border-[#c59941]/20 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-ouro/10 text-ouro border border-ouro/20 flex items-center justify-center">
                   <SlidersHorizontal size={18} />
                 </div>
                 <div>
-                  <h3 className="text-base font-black font-titulo text-slate-900">Filtros da Loja</h3>
-                  <p className="text-[11px] text-slate-500">Refine os produtos exibidos</p>
+                  <h3 className="text-base font-black font-titulo text-texto-principal">Filtros da Loja</h3>
+                  <p className="text-[11px] text-texto-secundario">Refine os produtos exibidos</p>
                 </div>
               </div>
 
               <button
                 type="button"
                 onClick={() => setDrawerFiltrosAberto(false)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all cursor-pointer"
+                className="p-2 rounded-xl text-texto-terciario hover:text-texto-secundario hover:bg-fundo-elevado transition-all cursor-pointer"
                 aria-label="Fechar filtros"
               >
                 <X size={20} />
@@ -354,27 +338,27 @@ function ConteudoLoja() {
 
             {/* Conteúdo com Scroll */}
             <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
-              <label className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer">
-                <span className="text-xs font-black uppercase tracking-wider text-slate-800">Somente disponíveis</span>
+              <label className="flex items-center justify-between gap-3 p-3 rounded-xl bg-fundo-elevado/60 border border-borda-sutil cursor-pointer">
+                <span className="text-xs font-black uppercase tracking-wider text-texto-principal">Somente disponíveis</span>
                 <input
                   type="checkbox"
                   checked={somenteDisponiveis}
                   onChange={(e) => setSomenteDisponiveis(e.target.checked)}
-                  className="w-4 h-4 accent-[#c59941]"
+                  className="w-4 h-4 accent-ouro"
                 />
               </label>
 
               {/* 1. Filtro por Categoria */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-black uppercase tracking-wider text-slate-800">
+                  <label className="text-xs font-black uppercase tracking-wider text-texto-principal">
                     Categoria
                   </label>
                   {categoriaAtiva !== 'todas' && (
                     <button
                       type="button"
                       onClick={() => setCategoriaAtiva('todas')}
-                      className="text-[11px] text-[#c59941] hover:underline font-bold cursor-pointer"
+                      className="text-[11px] text-ouro hover:underline font-bold cursor-pointer"
                     >
                       Resetar
                     </button>
@@ -391,12 +375,12 @@ function ConteudoLoja() {
                         onClick={() => setCategoriaAtiva(cat.id)}
                         className={`px-3 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer text-left flex items-center justify-between border ${
                           ativo
-                            ? 'bg-[#c59941] text-slate-950 border-[#c59941] shadow-md shadow-[#c59941]/20 font-black'
-                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-100'
+                            ? 'bg-ouro text-azul-950 border-ouro shadow-md shadow-ouro/20 font-black'
+                            : 'bg-fundo-elevado/60 text-texto-secundario border-borda-sutil hover:border-borda-media hover:bg-fundo-elevado'
                         }`}
                       >
                         <span className="truncate">{cat.rotulo}</span>
-                        {ativo && <Check size={14} className="shrink-0 ml-1 text-slate-950 font-black" />}
+                        {ativo && <Check size={14} className="shrink-0 ml-1" />}
                       </button>
                     );
                   })}
@@ -407,14 +391,14 @@ function ConteudoLoja() {
               {atleticas.length > 0 && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs font-black uppercase tracking-wider text-slate-800">
+                    <label className="text-xs font-black uppercase tracking-wider text-texto-principal">
                       Atlética
                     </label>
                     {atleticaSelecionada && (
                       <button
                         type="button"
                         onClick={() => setAtleticaSelecionada('')}
-                        className="text-[11px] text-[#c59941] hover:underline font-bold cursor-pointer"
+                        className="text-[11px] text-ouro hover:underline font-bold cursor-pointer"
                       >
                         Limpar
                       </button>
@@ -427,8 +411,8 @@ function ConteudoLoja() {
                       onClick={() => setAtleticaSelecionada('')}
                       className={`w-full px-3 py-2 rounded-xl text-xs font-bold transition-all text-left flex items-center justify-between cursor-pointer border ${
                         !atleticaSelecionada
-                          ? 'bg-[#c59941]/10 text-[#9a7228] border-[#c59941]/40 font-black'
-                          : 'bg-slate-50 text-slate-600 border-slate-200 hover:text-slate-900 hover:bg-slate-100'
+                          ? 'bg-ouro/10 text-destaque border-ouro/40 font-black'
+                          : 'bg-fundo-elevado/60 text-texto-secundario border-borda-sutil hover:text-texto-principal hover:bg-fundo-elevado'
                       }`}
                     >
                       <span>Todas as Atléticas</span>
@@ -444,12 +428,12 @@ function ConteudoLoja() {
                           onClick={() => setAtleticaSelecionada(atl.id)}
                           className={`w-full px-3 py-2 rounded-xl text-xs font-bold transition-all text-left flex items-center justify-between cursor-pointer border ${
                             ativo
-                              ? 'bg-[#c59941]/15 text-[#9a7228] border-[#c59941]/50 font-black'
-                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-100'
+                              ? 'bg-ouro/15 text-destaque border-ouro/50 font-black'
+                              : 'bg-fundo-elevado/60 text-texto-secundario border-borda-sutil hover:border-borda-media hover:bg-fundo-elevado'
                           }`}
                         >
                           <div className="flex items-center gap-2 truncate">
-                            <div className="w-5 h-5 rounded-md bg-white border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center text-[10px] font-black">
+                            <div className="w-5 h-5 rounded-md bg-fundo-card border border-borda-sutil overflow-hidden shrink-0 flex items-center justify-center text-[10px] font-black">
                               {atl.logo_url ? (
                                 <img src={atl.logo_url} alt={atl.nome} className="w-full h-full object-cover" />
                               ) : (
@@ -458,7 +442,7 @@ function ConteudoLoja() {
                             </div>
                             <span className="truncate">{atl.nome}</span>
                           </div>
-                          {ativo && <Check size={14} className="shrink-0 ml-1 text-[#c59941]" />}
+                          {ativo && <Check size={14} className="shrink-0 ml-1 text-ouro" />}
                         </button>
                       );
                     })}
@@ -469,7 +453,7 @@ function ConteudoLoja() {
               {/* 3. Ordenação */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-black uppercase tracking-wider text-slate-800">
+                  <label className="text-xs font-black uppercase tracking-wider text-texto-principal">
                     Ordenar Por
                   </label>
                 </div>
@@ -485,15 +469,15 @@ function ConteudoLoja() {
                       <button
                         key={ord.id}
                         type="button"
-                        onClick={() => setOrdenacao(ord.id as any)}
+                        onClick={() => setOrdenacao(ord.id as typeof ordenacao)}
                         className={`w-full px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer flex items-center justify-between border ${
                           ativo
-                            ? 'bg-[#c59941]/15 text-[#9a7228] border-[#c59941]/50 shadow-sm font-black'
-                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300'
+                            ? 'bg-ouro/15 text-destaque border-ouro/50 shadow-sm font-black'
+                            : 'bg-fundo-elevado/60 text-texto-secundario border-borda-sutil hover:border-borda-media'
                         }`}
                       >
                         <span>{ord.rotulo}</span>
-                        {ativo && <Check size={16} className="text-[#c59941]" />}
+                        {ativo && <Check size={16} className="text-ouro" />}
                       </button>
                     );
                   })}
@@ -502,7 +486,7 @@ function ConteudoLoja() {
             </div>
 
             {/* Footer com Ações */}
-            <div className="p-5 sm:p-6 border-t border-slate-200 bg-slate-50 space-y-3">
+            <div className="p-5 sm:p-6 border-t border-borda-sutil bg-fundo-elevado/60 space-y-3">
               <Botao
                 larguraTotal
                 variante="primario"
@@ -517,7 +501,7 @@ function ConteudoLoja() {
                 <button
                   type="button"
                   onClick={limparTodosFiltros}
-                  className="w-full py-2 text-xs font-bold uppercase tracking-wider text-slate-500 hover:text-slate-900 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="w-full py-2 text-xs font-bold uppercase tracking-wider text-texto-secundario hover:text-texto-principal transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <RotateCcw size={13} />
                   <span>Limpar Todos os Filtros</span>
@@ -534,11 +518,7 @@ function ConteudoLoja() {
 export default function PaginaLoja() {
   return (
     <Suspense
-      fallback={
-        <div className="py-20 flex flex-col items-center justify-center gap-3">
-          <Carregando tamanho="lg" texto="Carregando loja..." />
-        </div>
-      }
+      fallback={<div className="max-w-7xl mx-auto px-4 sm:px-6 pt-16"><div className="skeleton h-40 rounded-[1.75rem]" /></div>}
     >
       <ConteudoLoja />
     </Suspense>

@@ -1,5 +1,6 @@
 'use client';
 
+import { construirUrl } from '@/lib/dominios';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usarAutenticacao } from '@/contextos/ContextoAutenticacao';
@@ -260,7 +261,7 @@ export default function PaginaCadastroDiretor() {
     } else {
       // Encerra a sessão temporária de OTP e redireciona para a tela de login do diretor exibindo o modal
       await supabase.auth.signOut();
-      window.location.href = '/autenticacao/entrar?pendente=1';
+      window.location.href = construirUrl('diretor', '/autenticacao/entrar?pendente=1');
     }
   }
 
@@ -275,7 +276,7 @@ export default function PaginaCadastroDiretor() {
         <div>
           {/* Navegação Superior */}
           <Link
-            href="/autenticacao/entrar"
+            href={construirUrl('diretor', '/autenticacao/entrar')}
             className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 transition-all uppercase tracking-wider bg-white hover:bg-slate-100 px-4 py-2 rounded-full border border-slate-200 shadow-sm w-fit mb-12"
           >
             <ArrowLeft size={14} />
@@ -350,7 +351,7 @@ export default function PaginaCadastroDiretor() {
         {/* Botão de voltar visível apenas no mobile */}
         <div className="w-full max-w-xl lg:hidden mb-4 sm:mb-6">
           <Link
-            href="/autenticacao/entrar"
+            href={construirUrl('diretor', '/autenticacao/entrar')}
             className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-slate-900 transition-all uppercase tracking-wider bg-white hover:bg-slate-50 px-3.5 py-2 rounded-full border border-slate-200 shadow-sm"
           >
             <ArrowLeft size={14} />
@@ -892,7 +893,7 @@ export default function PaginaCadastroDiretor() {
             <p className="text-xs text-slate-500">
               Já possui uma conta de diretor cadastrada?{' '}
               <Link
-                href="/autenticacao/entrar"
+                href={construirUrl('diretor', '/autenticacao/entrar')}
                 className="text-[#9a7228] hover:text-[#c59941] underline font-bold transition-colors ml-1"
               >
                 Entrar

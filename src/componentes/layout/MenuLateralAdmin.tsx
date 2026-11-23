@@ -1,6 +1,7 @@
 'use client';
 
-import Link from 'next/link';
+import { usarRotaPainel } from '@/lib/rotasPainel';
+import { construirUrl } from '@/lib/dominios';import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utilitarios';
 import { usarAutenticacao } from '@/contextos/ContextoAutenticacao';
@@ -37,14 +38,16 @@ export default function MenuLateralAdmin() {
   const [recolhido, setRecolhido] = useState(false);
   const [mobileAberto, setMobileAberto] = useState(false);
 
-  const protocolo = process.env.NEXT_PUBLIC_PROTOCOLO || 'https';
-  const dominioPrincipal = (process.env.NEXT_PUBLIC_DOMINIO_PRINCIPAL || 'meuingrss.com.br').replace(/\/+$/, '');
+  const rota = usarRotaPainel();
+  const urlSite = construirUrl('cliente', '/');
+  // Caminho dentro do painel sem o prefixo /admin (modo caminho) para marcar o item ativo
+  const caminhoPainel = pathname.replace(/^\/admin(?=\/|$)/, '') || '/';
 
   return (
     <>
       {/* Top Mobile Navigation Bar (< md) */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 pt-safe bg-white/95 backdrop-blur-md border-b border-slate-200 z-40 px-4 flex items-center justify-between">
-        <Logo href="/" subtitulo="Administração" tamanhoIcone="sm" tamanhoTexto="sm" />
+        <Logo href={rota('/')} subtitulo="Administração" tamanhoIcone="sm" tamanhoTexto="sm" />
 
         <button
           onClick={() => setMobileAberto(!mobileAberto)}
@@ -65,7 +68,7 @@ export default function MenuLateralAdmin() {
 
           <aside className="relative z-10 w-72 bg-white border-r border-slate-200 flex flex-col h-full shadow-2xl p-4 animate-in slide-in-from-left duration-200">
             <div className="flex items-center justify-between pb-4 border-b border-slate-200">
-              <Logo href="/" subtitulo="Administração" tamanhoIcone="sm" tamanhoTexto="sm" aoClicar={() => setMobileAberto(false)} />
+              <Logo href={rota('/')} subtitulo="Administração" tamanhoIcone="sm" tamanhoTexto="sm" aoClicar={() => setMobileAberto(false)} />
               <button
                 onClick={() => setMobileAberto(false)}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
@@ -77,13 +80,13 @@ export default function MenuLateralAdmin() {
             <nav className="flex-1 py-4 space-y-1.5 overflow-y-auto">
               {itensMenu.map((item) => {
                 const ativo =
-                  pathname === item.href ||
-                  (item.href !== '/' && pathname.startsWith(item.href));
+                  caminhoPainel === item.href ||
+                  (item.href !== '/' && caminhoPainel.startsWith(item.href));
 
                 return (
                   <Link
                     key={item.href}
-                    href={item.href}
+                    href={rota(item.href)}
                     onClick={() => setMobileAberto(false)}
                     className={cn(
                       'flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all',
@@ -101,7 +104,7 @@ export default function MenuLateralAdmin() {
 
             <div className="pt-4 border-t border-slate-200 space-y-2">
               <a
-                href={`${protocolo}://${dominioPrincipal}`}
+                href={urlSite}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all"
@@ -148,7 +151,7 @@ export default function MenuLateralAdmin() {
       >
         <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200">
           {!recolhido && (
-            <Logo href="/" subtitulo="Administração" tamanhoIcone="sm" tamanhoTexto="sm" />
+            <Logo href={rota('/')} subtitulo="Administração" tamanhoIcone="sm" tamanhoTexto="sm" />
           )}
           <button
             onClick={() => setRecolhido(!recolhido)}
@@ -161,13 +164,13 @@ export default function MenuLateralAdmin() {
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {itensMenu.map((item) => {
             const ativo =
-              pathname === item.href ||
-              (item.href !== '/' && pathname.startsWith(item.href));
+              caminhoPainel === item.href ||
+              (item.href !== '/' && caminhoPainel.startsWith(item.href));
 
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={rota(item.href)}
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
                   ativo
@@ -185,7 +188,7 @@ export default function MenuLateralAdmin() {
 
         <div className="p-3 border-t border-slate-200 space-y-1">
           <a
-            href={`${protocolo}://${dominioPrincipal}`}
+            href={urlSite}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all"
@@ -223,7 +226,7 @@ export default function MenuLateralAdmin() {
                 </span>
               </div>
             ) : (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono font-medium text-slate-600 bg-slate-100 border border-slate-200" title={`MeuIngrss ${VERSAO_SISTEMA}`}>
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-mono font-medium text-slate-600 bg-slate-100 border border-slate-200" title={`Cinética ${VERSAO_SISTEMA}`}>
                 {VERSAO_SISTEMA}
               </span>
             )}

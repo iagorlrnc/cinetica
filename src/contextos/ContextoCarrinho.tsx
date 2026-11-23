@@ -25,7 +25,7 @@ interface ContextoCarrinhoType {
   recarregarCarrinho: () => Promise<void>;
 }
 
-const STORAGE_KEY = 'meuingrss_carrinho_loja_v1';
+const STORAGE_KEY = 'cinetica_carrinho_loja_v1';
 const ContextoCarrinho = createContext<ContextoCarrinhoType | null>(null);
 
 export function usarCarrinho() {

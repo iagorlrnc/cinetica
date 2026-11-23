@@ -1,14 +1,13 @@
 import { Metadata } from 'next';
 import { serializarJsonLdSeguro } from '@/lib/jsonLd';
+import { obterUrlSite } from '@/lib/dominios';
 
-const dominioPrincipal = (process.env.NEXT_PUBLIC_DOMINIO_PRINCIPAL || 'meuingrss.com.br').replace(/\/+$/, '');
-const protocolo = process.env.NEXT_PUBLIC_PROTOCOLO || 'https';
-const baseUrl = `${protocolo}://${dominioPrincipal}`;
+const baseUrl = obterUrlSite();
 
 export const metadata: Metadata = {
-  title: 'Eventos | Meuingrss',
+  title: 'Eventos | Cinética',
   description:
-    'Confira todos os eventos, calouradas e festas de atléticas universitárias em Palmas e no Tocantins. Compre seus ingressos digitais via Pix ou Cartão no Meuingrss!',
+    'Confira todos os eventos, calouradas e festas de atléticas universitárias em Palmas e no Tocantins. Compre seus ingressos digitais via Pix ou Cartão na Cinética!',
   alternates: {
     canonical: `${baseUrl}/eventos`,
   },
@@ -22,17 +21,17 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: 'Eventos | Meuingrss',
+    title: 'Eventos | Cinética',
     description:
       'Encontre os melhores eventos universitários e garanta seus ingressos digitais com segurança.',
     url: `${baseUrl}/eventos`,
-    siteName: 'Meuingrss',
+    siteName: 'Cinética',
     locale: 'pt_BR',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Todos os Eventos | Meuingrss',
+    title: 'Todos os Eventos | Cinética',
     description: 'Adquira ingressos para eventos universitários com aprovação instantânea.',
   },
 };

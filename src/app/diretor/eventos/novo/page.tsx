@@ -1,5 +1,6 @@
 'use client';
 
+import { usarRotaPainel } from '@/lib/rotasPainel';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Cartao from '@/componentes/ui/Cartao';
@@ -25,6 +26,7 @@ import {
 import Link from 'next/link';
 import MapPicker from '@/componentes/mapa/MapPicker';
 import { obterIdAtleticaCinetica } from '@/lib/atleticaCinetica';
+import { traduzirErroBanco } from '@/lib/errosBanco';
 
 interface LoteForm {
   nome_lote: string;
@@ -32,8 +34,16 @@ interface LoteForm {
   quantidade_total: string;
 }
 
+/** Nome único para a imagem do evento no Storage. */
+function gerarNomeArquivoEvento(nomeOriginal: string): string {
+  const ext = nomeOriginal.split('.').pop() || 'jpg';
+  const sufixo = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID().slice(0, 8) : Math.random().toString(36).slice(2, 10);
+  return `evento_${Date.now()}_${sufixo}.${ext}`;
+}
+
 export default function PaginaCriarEvento() {
   const router = useRouter();
+  const rota = usarRotaPainel();
   const { perfil } = usarAutenticacao();
   const { sucesso, erro: notificarErro } = useNotificacao();
   const supabase = criarClienteNavegador();
@@ -87,9 +97,7 @@ export default function PaginaCriarEvento() {
 
     setEnviandoImagem(true);
     try {
-      const ext = file.name.split('.').pop() || 'jpg';
-      const randomSuffix = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID().slice(0, 8) : Date.now().toString(36);
-      const nomeArquivo = `evento_${Date.now()}_${randomSuffix}.${ext}`;
+      const nomeArquivo = gerarNomeArquivoEvento(file.name);
 
       const { data, error } = await supabase.storage
         .from('eventos')
@@ -110,7 +118,7 @@ export default function PaginaCriarEvento() {
       setImagemUrl(publicUrlData.publicUrl);
       sucesso('Capa do evento enviada!', 'A foto de capa foi salva com sucesso no Supabase Storage.');
     } catch (err: unknown) {
-      const mensagem = err instanceof Error ? err.message : 'Não foi possível enviar a imagem. Verifique se os buckets do Supabase foram criados.';
+      const mensagem = traduzirErroBanco(err, 'enviar a imagem');
       notificarErro('Erro no upload', mensagem);
     } finally {
       setEnviandoImagem(false);
@@ -129,26 +137,9 @@ export default function PaginaCriarEvento() {
   async function aoSubmeter(e: React.FormEvent, publicar: boolean = false) {
     e.preventDefault();
 
-    let idAtletica = perfil?.atletica_id;
-
-    if (!idAtletica && perfil?.id) {
-      const { data: usuarioPerfil } = await supabase
-        .from('profiles')
-        .select('atletica_id')
-        .eq('id', perfil.id)
-        .maybeSingle();
-
-      if (usuarioPerfil?.atletica_id) {
-        idAtletica = usuarioPerfil.atletica_id;
-      }
-    }
-
+    const idAtletica = await obterIdAtleticaCinetica(supabase);
     if (!idAtletica) {
-      idAtletica = (await obterIdAtleticaCinetica(supabase)) || undefined;
-    }
-
-    if (!idAtletica) {
-      notificarErro('Erro', 'Não foi possível vincular o evento à Atlética Cinética.');
+      notificarErro('Atlética não encontrada', 'Cadastre a Atlética Cinética no banco antes de criar eventos.');
       return;
     }
 
@@ -236,10 +227,10 @@ export default function PaginaCriarEvento() {
         publicar ? 'Seu evento já está visível para os clientes' : 'Você pode publicar depois'
       );
 
-      router.push('/eventos');
+      router.push(rota('/eventos'));
     } catch (err) {
-      notificarErro('Erro ao salvar', 'Tente novamente');
-      console.error(err);
+      console.error('Erro ao salvar evento:', err);
+      notificarErro('Erro ao salvar evento', traduzirErroBanco(err, 'salvar o evento'));
     }
 
     setSalvando(false);
@@ -247,7 +238,7 @@ export default function PaginaCriarEvento() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <Link href="/eventos" className="inline-flex items-center gap-2 text-sm text-texto-secundario hover:text-texto-principal transition-colors mb-6">
+      <Link href={rota('/eventos')} className="inline-flex items-center gap-2 text-sm text-texto-secundario hover:text-texto-principal transition-colors mb-6">
         <ArrowLeft size={16} /> Voltar
       </Link>
 
@@ -402,7 +393,7 @@ export default function PaginaCriarEvento() {
                     setLongitude(null);
                   }
                 }}
-                className="w-4 h-4 rounded bg-[#111a2e] border-white/20 text-[#ff007a] focus:ring-[#ff007a] cursor-pointer"
+                className="w-4 h-4 rounded bg-[#111a2e] border-white/20 text-[#c59941] focus:ring-[#c59941] cursor-pointer"
               />
               <label
                 htmlFor="checkbox-local-nao-definido-novo"

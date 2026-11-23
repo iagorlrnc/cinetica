@@ -174,7 +174,7 @@ export default function MapPicker({
           <MapPin size={16} className="text-[#c59941]" />
           Localização no Mapa
         </label>
-        <span className="text-xs text-slate-400">
+        <span className="text-xs text-texto-terciario">
           Clique no mapa ou araste o marcador para definir o ponto
         </span>
       </div>
@@ -188,7 +188,7 @@ export default function MapPicker({
       </div>
 
       {lat !== null && lng !== null && localDefinido && (
-        <div className="text-xs text-slate-400 flex items-center justify-between px-1">
+        <div className="text-xs text-texto-terciario flex items-center justify-between px-1">
           <span>Coordenadas selecionadas:</span>
           <span className="font-mono text-slate-200">
             {lat.toFixed(6)}, {lng.toFixed(6)}
@@ -210,7 +210,7 @@ export default function MapPicker({
             htmlFor="checkbox-local-nao-definido"
             className="text-xs font-medium text-slate-300 cursor-pointer select-none flex items-center gap-1.5"
           >
-            <AlertCircle size={14} className="text-slate-400" />
+            <AlertCircle size={14} className="text-texto-terciario" />
             Local não definido (oculta o mapa nos detalhes do evento)
           </label>
         </div>
